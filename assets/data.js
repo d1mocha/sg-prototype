@@ -1,0 +1,1330 @@
+/* ════════════════════════════════════════════════════════════════════
+   Shine Guards — content & prices (prototype)
+   Private prices = what the customer pays (AT/DE Brutto, SK final price).
+   Business prices = Netto. Sources: Notion «База знань DM»,
+   «Калькулятор.xlsx», shineguards.com texts.
+   ════════════════════════════════════════════════════════════════════ */
+const BASE = 'https://www.shineguards.com';
+const PHONE = '+43 1 442 10 36', PHONE_TEL = '+4314421036';
+const WA = 'https://wa.me/4368120873649', TG = 'https://t.me/+4368120873649';
+const IG = 'https://www.instagram.com/shineguards_vienna', FB = 'https://www.facebook.com/profile.php?id=61562707127544';
+const EMAIL = 'hello@shineguards.com';
+const ADDRESS = 'Stoß im Himmel 1/21, 1010 Відень, Австрія';
+const GMAPS = 'https://maps.app.goo.gl/N6FtaPYmt4Kbf39j8';
+const GREVIEW = 'https://www.google.com/maps/place//data=!4m4!3m3!1s0x476d07bcec4bf9eb:0x46e6cc01a442efe3!9m1!1b1';
+const HOURS_TXT = 'Прибираємо 24/7 · менеджери на звʼязку щодня, 9:00–18:00';
+
+const TIERS = [50, 69, 89, 109, 129, 149, 169, 189, 209, 229, 249, 269, 289, 300];
+const TIER_LABELS = ['до 50', '50–69', '70–89', '90–109', '110–129', '130–149', '150–169', '170–189', '190–209', '210–229', '230–249', '250–269', '270–289', '290–300'];
+const AT_CREW = {
+  basic:   { c: [1,1,2,2,2,2,3,3,3,3,4,4,4,4], h: [2.5,3,2.5,3.5,4,4.5,4,4.5,5,5.5,5,5.5,6,6.5] },
+  general: { c: [2,2,2,3,3,3,3,4,4,4,5,5,5,5], h: [2,2.5,4,4,4.5,5,5.5,5,5.5,6,5.5,6,6.5,7] },
+  deep:    { c: [2,2,2,3,3,3,4,4,5,5,6,6,6,6], h: [3,5,6,5.5,6,6.5,6.5,7,6.5,7,7,7.5,8,8.5] },
+};
+const SK_CREW = {
+  basic:   { c: [1,1,2,2,2,2,3,3,3,3,4,4,4,4], h: [2.5,3,3,3.5,4,4.5,4,4.5,5,5.5,5,5.5,6,6.5] },
+  general: { c: [1,1,2,3,3,3,3,4,4,4,5,5,5,5], h: [3,3.5,4,4,4.5,5,5.5,5,5.5,6,5.5,6,6.5,7] },
+  deep:    { c: [1,2,2,3,3,3,4,4,5,5,6,6,6,6], h: [5,5,6,5.5,6,6.5,6.5,7,6.5,7,7,7.5,8,8.5] },
+};
+const PRICES = {
+  vienna: {
+    basic:   [120,145,195,230,260,295,390,440,490,535,650,715,780,845],
+    general: [170,205,260,390,440,490,535,650,715,780,895,975,1055,1135],
+    deep:    [260,335,405,555,605,655,875,940,1090,1175,1410,1510,1615,1715],
+  },
+  graz: {
+    basic:   [100,120,160,185,210,240,315,355,395,435,530,580,635,685],
+    general: [140,165,210,315,355,395,435,530,580,635,725,790,860,925],
+    deep:    [205,265,315,435,475,515,685,740,860,925,1110,1190,1265,1345],
+  },
+  bratislava: {
+    basic:   [65,75,110,130,145,165,220,245,270,300,360,400,435,470],
+    general: [75,85,145,220,245,270,300,360,400,435,495,540,585,630],
+    deep:    [90,180,220,300,325,355,470,505,585,630,760,810,865,920],
+  },
+};
+const CITIES = {
+  vienna:     { name: 'Відень',     loc: 'Відні',      country: 'at', prices: 'vienna',     crew: AT_CREW },
+  graz:       { name: 'Грац',       loc: 'Граці',      country: 'at', prices: 'graz',       crew: AT_CREW },
+  munich:     { name: 'Мюнхен',     loc: 'Мюнхені',    country: 'de', prices: 'vienna',     crew: AT_CREW }, // ціни як у Відні
+  bratislava: { name: 'Братислава', loc: 'Братиславі', country: 'sk', prices: 'bratislava', crew: SK_CREW },
+};
+const CTRY = {
+  at: { vat: .20, incl: 'Ціна з ПДВ 20%', pct: '20%' },
+  de: { vat: .19, incl: 'Ціна з ПДВ',     pct: '19%' },
+  sk: { vat: 0,   incl: 'Фінальна ціна',  pct: '' },
+};
+const RATES_AT = { extraHour: 32.5, windowHour: 36, hourly: 32.5, minVisit: 108, rug: 130, carpet: [16, 14, 13],
+  uph: { '2seater': 78, '3seater': 90, '4seater': 102, lshaped: 114, xl: 144, armchair: 30, pouf: 24, chair: 24, headboard: 36, bedsides: 48 } };
+const RATES = {
+  at: RATES_AT, de: RATES_AT,
+  sk: { extraHour: 18, windowHour: 21.5, hourly: 18, minVisit: 70, rug: 105, carpet: [13, 12, 11],
+        uph: { '2seater': 70, '3seater': 80, '4seater': 90, lshaped: 105, xl: 120, armchair: 25, pouf: 22, chair: 22, headboard: 30, bedsides: 40 } },
+};
+
+const TYPES = {
+  basic:   { name: 'Базове',        full: 'Базове прибирання' },
+  general: { name: 'Генеральне',    full: 'Генеральне прибирання' },
+  deep:    { name: 'Глибоке',       full: 'Глибоке прибирання' },
+  moveout: { name: 'Переїзд',       full: 'Прибирання при переїзді' },
+  windows: { name: 'Лише вікна',    full: 'Миття вікон' },
+  chem:    { name: 'Хімчистка',     full: 'Хімчистка меблів і килимів' },
+  reno:    { name: 'Після ремонту', full: 'Прибирання після ремонту' },
+  extras:  { name: 'Окремі послуги', full: 'Окремі послуги без прибирання' },
+};
+const PRICE_KEY = { basic: 'basic', general: 'general', deep: 'deep', moveout: 'general' };
+const TIER_RANK = { basic: 0, general: 1, deep: 2 };
+
+// Scope by room — wording from the offer cards and the DM knowledge base
+const ROOMS = [
+  { id: 'rooms', name: 'Кімнати', icon: 'sofa', tasks: [
+    ['Пилососимо й миємо підлогу по всій площі', 'basic'],
+    ['Пилососимо килими та мʼякі меблі', 'basic'],
+    ['Пил на меблях, полицях, тумбочках і підвіконнях', 'basic'],
+    ['Дзеркала та скляні поверхні', 'basic'],
+    ['Двері, ручки, вимикачі, розетки й радіатори', 'basic'],
+    ['Застеляємо ліжко або міняємо білизну — за потреби', 'basic'],
+    ['Порядок на поверхнях і провітрювання', 'basic'],
+    ['Накопичений бруд і важкодоступні місця', 'general'],
+    ['Шафи, гардероби й шухляди всередині', 'deep'],
+    ['Меблі детально, включно з прихованими зонами', 'deep'],
+    ['Акуратно складаємо речі в гардеробі', 'deep'],
+  ] },
+  { id: 'kitchen', name: 'Кухня', icon: 'oven', tasks: [
+    ['Миємо посуд і раковину', 'basic'],
+    ['Стільниця й фасади кухонного гарнітуру', 'basic'],
+    ['Плита, холодильник і мікрохвильовка ззовні', 'basic'],
+    ['Стіл і стільці', 'basic'],
+    ['Виносимо сміття', 'basic'],
+    ['Духовка й холодильник всередині', 'general'],
+    ['Детальне очищення поверхонь і техніки ззовні', 'general'],
+    ['Мікрохвильовка, витяжка, інша техніка всередині', 'deep'],
+    ['Кухонні шафи всередині', 'deep'],
+    ['Жир і стійкий бруд', 'deep'],
+  ] },
+  { id: 'bath', name: 'Ванна й туалет', icon: 'bath', tasks: [
+    ['Унітаз, раковина, ванна або душова', 'basic'],
+    ['Крани й металеві деталі — до блиску', 'basic'],
+    ['Дзеркала та скляні поверхні', 'basic'],
+    ['Полиці й тумбочки ззовні', 'basic'],
+    ['Міняємо рушники — за потреби', 'basic'],
+    ['Миємо підлогу', 'basic'],
+    ['Шафи у ванній всередині', 'deep'],
+    ['Кахель і міжплиточні шви', 'deep'],
+    ['Накип і вапняний наліт', 'deep'],
+  ] },
+  { id: 'extra', name: 'Вікна й балкон', icon: 'window', tasks: [
+    ['Вікна зсередини', 'general'],
+    ['Балкон або тераса — за потреби', 'general'],
+    ['Вікна ззовні — за умови безпечного доступу', 'deep'],
+    ['🎁 1 година прасування', 'general'],
+    ['🎁 до 1 години хімчистки мʼяких меблів', 'deep'],
+  ] },
+];
+const INC_PILLS = {
+  basic:   ['Кімнати', 'Кухня', 'Ванна'],
+  general: ['Кімнати', 'Кухня', 'Ванна', 'Вікна зсередини', 'Духовка й холодильник'],
+  deep:    ['Кімнати', 'Кухня', 'Ванна', 'Вікна з обох боків', 'Техніка й шафи всередині', 'Жир і накип'],
+  moveout: ['Кімнати', 'Кухня', 'Ванна', 'Вікна зсередини', 'Техніка й шафи всередині', 'Плінтуси, вимикачі, ручки', 'Балкон'],
+};
+const CAN_ADD = {
+  basic:   [['win', 'вікна'], ['kitchen', 'духовку'], ['hourly', 'шафи'], ['uph', 'хімчистку']],
+  general: [['win_out', 'вікна ззовні'], ['hourly', 'шафи'], ['uph', 'хімчистку']],
+  deep:    [['uph', 'хімчистку'], ['mat', 'матраци']],
+  moveout: [['win_out', 'вікна ззовні'], ['uph', 'хімчистку']],
+};
+const GIFTS = { general: ['🎁 1 година прасування у подарунок'], deep: ['🎁 1 година прасування у подарунок', '🎁 до 1 години хімчистки меблів у подарунок'] };
+
+// `sk` — Bratislava: the time the job takes in Vienna (price / 30 € an hour) at the local 18 € an hour
+// (owner, Oct 2026: «там рахуємо все по 18–21 € за годину»)
+const FLAT = [
+  { id: 'oven',      name: 'Духовка всередині',     price: 35, sk: 21, d: 'жир, нагар і стійкі забруднення' },
+  { id: 'fridge',    name: 'Холодильник всередині', price: 35, sk: 21, d: 'миємо всередині та ззовні' },
+  { id: 'microwave', name: 'Мікрохвильовка',        price: 22, sk: 13, d: 'всередині та ззовні' },
+  { id: 'hood',      name: 'Витяжка',               price: 35, sk: 21, d: 'знімаємо жир' },
+  { id: 'balcony',   name: 'Балкон / тераса',       price: 40, sk: 24 },
+];
+const HOURLY = [
+  { id: 'kitchen_cabinets',  name: 'Кухонні шафи всередині' },
+  { id: 'bathroom_cabinets', name: 'Шафи у ванній всередині' },
+  { id: 'wardrobe',          name: 'Гардероб: скласти речі' },
+  { id: 'ironing',           name: 'Прасування' },
+];
+const INCLUDED = {
+  basic: [], general: ['oven', 'fridge', 'balcony'],
+  deep: ['oven', 'hood', 'microwave', 'fridge', 'balcony', 'kitchen_cabinets', 'bathroom_cabinets', 'wardrobe'],
+  moveout: ['oven', 'hood', 'microwave', 'fridge', 'balcony', 'kitchen_cabinets', 'bathroom_cabinets', 'wardrobe'],
+};
+const UPH = [
+  { id: '2seater',   name: 'Диван 2-місний (до 1,6 м)', min: 60 },
+  { id: '3seater',   name: 'Диван 3-місний (до 2 м)',   min: 60 },
+  { id: '4seater',   name: 'Диван 4-місний (до 2,5 м)' },
+  { id: 'lshaped',   name: 'Кутовий диван' },
+  { id: 'xl',        name: 'Диван XL / П-подібний' },
+  { id: 'armchair',  name: 'Крісло',                    min: 30 },
+  { id: 'pouf',      name: 'Пуф',                       min: 30 },
+  { id: 'chair',     name: 'Кухонний стілець',          min: 20 },
+  { id: 'headboard', name: 'Узголівʼя ліжка',           min: 30 },
+  { id: 'bedsides',  name: 'Мʼякі борти ліжка',         min: 30 },
+];
+// `sk` — Bratislava: 10 € less than in Vienna, as the sofas there (78 → 70, 90 → 80, 102 → 90)
+const MATTRESS = [
+  { id: '80x200', w: 80, p: 70, sk: 60, min: 60 }, { id: '90x200', w: 90, p: 80, sk: 70, min: 60 }, { id: '100x200', w: 100, p: 90, sk: 80, min: 60 },
+  { id: '120x200', w: 120, p: 100, sk: 90, min: 60 }, { id: '140x200', w: 140, p: 110, sk: 100, min: 90 }, { id: '160x200', w: 160, p: 120, sk: 110, min: 90 },
+  { id: '180x200', w: 180, p: 130, sk: 120, min: 90 }, { id: '200x200', w: 200, p: 140, sk: 130, min: 90 },
+];
+/* Windows are counted by the company's instruction (Notion §1.7, sent again by the owner on 2026-10-09):
+     time = glass m² × (2 / 3 / 5 min by the soiling) + frame linear metres × (2 / 5 / 7.5 min),
+   for EVERY side that is washed — both sides is the standard job; 2–3 m high +20%; a net +10 min, blinds 10–15 min and
+   a grille +5 min per sash; a cluttered windowsill and furniture close to the window +2.5 min per window each;
+   washing during office hours +15% of all the time; +15 min of preparation once per object; the sum is rounded up to
+   15 min and told as «up to + 15 min». The rate: 36 € brutto an hour (AT, DE), 21.5 € (SK).
+   `frame` = the perimeter of the sashes plus dividers, as the instruction measures it; `glass` = m².
+   The typical sizes per type are an assumption — the instruction works from real measurements and photos. */
+const WIN_TYPES = [
+  { id: 'single', name: 'Одностулкове вікно', size: '≈ 80 × 125 см', sub: 'одна стулка',           glass: 1.0, frame: 4.1,  sashes: 1 },
+  { id: 'double', name: 'Двостулкове вікно',  size: '≈ 140 × 145 см', sub: 'дві стулки',           glass: 2.0, frame: 8.6,  sashes: 2 },
+  { id: 'door',   name: 'Балконні двері',     size: '≈ 75 × 215 см', sub: 'скляні двері',          glass: 1.6, frame: 5.8,  sashes: 1 },
+  { id: 'pano',   name: 'Панорамне вікно',    size: '≈ 180 × 195 см', sub: 'велике скло до підлоги', glass: 3.5, frame: 11.4, sashes: 2 },
+];
+const WIN_EXTRA = { net: 10, blinds: 12.5, grid: 5, sill: 2.5, furn: 2.5, high: .2, workhours: .15, prep: 15 };
+// Business glass: the sizes are typical ones (an assumption), the time formula is the same as at home.
+// `inner` — a partition is washed from both sides and both of them are inside.
+const WIN_TYPES_BIZ = [
+  { id: 'boffice', ico: 'double', name: 'Офісне вікно', size: '≈ 140 × 145 см', sub: 'дві стулки', glass: 2.0, frame: 8.6, sashes: 2 },
+  { id: 'bdoor', ico: 'door', name: 'Скляні двері', size: '≈ 90 × 215 см', sub: 'вхідні або внутрішні', glass: 1.9, frame: 6.1, sashes: 1 },
+  { id: 'bshow', ico: 'pano', name: 'Вітрина', size: '≈ 250 × 220 см', sub: 'одне велике скло', glass: 5.5, frame: 6, sashes: 1 },
+  { id: 'bpano', ico: 'pano', name: 'Панорамне скло / фасадна секція', size: '≈ 180 × 300 см', sub: 'скло до підлоги', glass: 5.4, frame: 8, sashes: 1 },
+  { id: 'bpart', ico: 'single', name: 'Скляна перегородка', size: '≈ 100 × 250 см', sub: 'секція, з обох боків', glass: 2.5, frame: 2, sashes: 1, inner: true },
+];
+const WIN_BIZ = {
+  regular: [['once', 'Разово'], ['monthly', 'Щомісяця'], ['quarter', 'Раз на квартал'], ['other', 'Інший графік']],
+  access: [['easy', 'Звичайний доступ', 'із землі або з приміщення'], ['ladder', 'Потрібна драбина', 'скло вище 2 метрів'], ['high', 'Складний / висотний', 'оцінюємо окремо']],
+  facade: { max: 150, k: 1.25 }, // big showcases and facades by area: glass minutes per m², ×1.25 for frames and edges
+  blinds: 15,                    // € netto per window — the business price list
+};
+const WIN_DIRT = {
+  basic: { name: 'Звичайні',      sub: 'пил, сліди від дощу',   frame: 2,   glass: 2 },
+  heavy: { name: 'Дуже брудні',   sub: 'давно не мили',         frame: 5,   glass: 3 },
+  reno:  { name: 'Після ремонту', sub: 'фарба, цемент, плівка', frame: 7.5, glass: 5 },
+};
+// Regular cleaning discounts
+const FREQ = [
+  { id: 'once', label: 'Разово', disc: 0 },
+  { id: 'weekly', label: 'Щотижня', disc: .07 },
+  { id: 'biweekly', label: 'Раз на 2 тижні', disc: .05 },
+  { id: 'monthly', label: 'Раз на місяць', disc: .03 },
+];
+const VPM = { weekly: 52 / 12, biweekly: 26 / 12, monthly: 1 };
+const PLAN_UP = { basic: ['general', 'deep'], general: ['deep'], deep: [] };
+// Welcome bonus: a new client's first order
+const WELCOME = .1;
+
+// Business (Калькулятор.xlsx), Netto
+const BIZ = { rate: 27, floor: 24, maxSur: .30, maxDisc: .15, minRegular: 52, minOneOff: 90, windowHour: 30, weeks: 4.33, volumeHours: 100, bigHours: 150 };
+const BIZ_OBJ = [
+  { id: 'office', name: 'Офіс', icon: 'office' }, { id: 'restaurant', name: 'Ресторан, кафе', icon: 'cloche' },
+  { id: 'gym', name: 'Спортзал, студія', icon: 'dumbbell' }, { id: 'shop', name: 'Магазин, салон', icon: 'shop' },
+  { id: 'apartments', name: 'Апартаменти', icon: 'bed' }, { id: 'windows', name: 'Миття вікон', icon: 'window' },
+  { id: 'other', name: 'Інший обʼєкт', icon: 'towers' },
+];
+const BIZ_FREQ = [
+  { v: 0, label: 'Разово' }, { v: .25, label: 'Раз на місяць' }, { v: .5, label: 'Раз на 2 тижні' },
+  { v: 1, label: '1× на тиждень' }, { v: 2, label: '2× на тиждень' }, { v: 3, label: '3× на тиждень' },
+  { v: 5, label: 'Пн–Пт' }, { v: 7, label: 'Щодня' },
+];
+// Object pages with their own calculator: the client gives the area, the schedule and the zones — the team and the length
+// of a visit are ours to count, the client never picks cleaners or hours.
+//   hours of a visit = setup + Σ area × share / norm (m² per cleaner-hour) + add-ons, priced with the BIZ rate and minimums.
+// The norms below are working assumptions — that is why the result is shown as a range (BIZ_SOLO_RANGE) and never as an
+// offer. Shops, offices and gyms are tuned to the owner's real timings; the other norms are estimates.
+const BIZ_SOLO_RANGE = [.9, 1.15];
+const BIZ_SOLO_FREQ = [[1, '1×'], [2, '2×'], [3, '3×'], [5, '5×'], [6, '6×'], [7, 'Щодня']];
+const BIZ_SOLO = {
+  // Gyms (owner, Oct 2026): the price by the usual rate, the time by the owner's real timings. Dry and wet zones are done
+  // by turns, so the more often we come, the less there is to do per visit (freqK). Area shares of the zones are typical
+  // ones (an assumption).
+  gyms: {
+    name: 'Фітнес-клуб, спортзал', icon: 'dumbbell', kindQ: 'Тип обʼєкта', kinds: ['Фітнес-клуб', 'Тренажерний зал', 'Спортивна студія', 'Йога / Pilates студія', 'Інший спортивний обʼєкт'],
+    area: ['Площа клубу', 50, 1500, 300], setup: 0,
+    freqK: { 1: 1, 2: .9, 3: .75, 5: .6, 6: .55, 7: .53 },
+    times: [['before', 'До відкриття'], ['after', 'Після закриття'], ['offpeak', 'Поза піковими годинами']],
+    zoneQ: 'Які зони прибирати?', all: 'Увесь клуб',
+    zones: [{ id: 'gym', name: 'Тренажерний зал', share: .45, norm: 60 }, { id: 'group', name: 'Зали групових занять', share: .15, norm: 60 }, { id: 'lounge', name: 'Рецепція / lounge', share: .1, norm: 60 },
+      { id: 'locker', name: 'Роздягальні', share: .12, norm: 36 }, { id: 'shower', name: 'Душові', share: .06, norm: 18 }, { id: 'wc', name: 'Санвузли', share: .04, norm: 30 }, { id: 'sauna', name: 'Сауна / wellness', share: .08, norm: 40 }],
+    // asked, not priced: day rounds are added to the offer by the manager
+    flags: [['day', 'Потрібне підтримуюче прибирання протягом дня', 'Денні обходи додамо до комерційної пропозиції окремим рядком.']],
+  },
+  // Car dealers: no figures from the owner — the shop floor (130 m²/h), office (100) and club WC (30) norms of the other
+  // pages are reused; area shares of the zones are typical ones (an assumption)
+  cars: {
+    name: 'Автосалон, сервісний центр', icon: 'shop', kindQ: 'Тип обʼєкта', kinds: ['Автосалон', 'Шоурум', 'Сервісний центр', 'Автосалон + сервіс', 'Інший обʼєкт'],
+    area: ['Площа обʼєкта', 100, 3000, 500], areaHint: 'Загальна площа — разом із сервісною зоною та службовими приміщеннями.', setup: .5,
+    times: [['sched', 'За графіком салону'], ['before', 'До відкриття'], ['after', 'Після закриття']], timeDef: 'sched',
+    zoneQ: 'Які зони прибирати?', all: 'Увесь обʼєкт',
+    zones: [{ id: 'show', name: 'Шоурум', share: .45, norm: 130 }, { id: 'wait', name: 'Зона очікування', share: .08, norm: 80 }, { id: 'office', name: 'Офіси', share: .12, norm: 100 }, { id: 'wc', name: 'Санвузли', share: .04, norm: 30 },
+      { id: 'service', name: 'Сервісна зона', share: .25, norm: 100, hint: 'Інтенсивне очищення мастил, технічних рідин і складних виробничих забруднень оцінюємо окремо.' },
+      { id: 'stock', name: 'Склад і службові приміщення', share: .06, norm: 130 }],
+    glassQ: 'Потрібне регулярне миття скляних фасадів?', glassLbl: 'Скляні фасади', glass: [['no', 'Ні'], ['in', 'Зсередини'], ['both', 'З обох боків']], glassK: .1, glassMin: .25,
+    glassNote: 'У суму входить миття скляних фасадів і вітрин зсередини. Зовнішнє миття — за погодженим графіком та окремим розрахунком.',
+  },
+  // Clinics are never priced automatically: the form collects what the manager needs, the price comes after an inspection
+  medical: {
+    name: 'Медичний заклад', icon: 'plus', quote: true, kindQ: 'Тип закладу', kinds: ['Медичний центр', 'Клініка', 'Стоматологія', 'Лабораторія', 'Інший медичний обʼєкт'],
+    area: ['Площа закладу', 30, 1500, 150], setup: 0, zones: [{ id: 'all', share: 1, norm: 100 }],
+    countQ: 'Кабінети та санвузли', counts: [['rooms', 'Кабінети', 4, 80], ['wc', 'Санвузли', 2, 40]],
+    times: [['after', 'Після прийому'], ['before', 'До прийому'], ['custom', 'Індивідуальний графік']], timeDef: 'after',
+    flagQ: 'Особливості закладу', flags: [['plan', 'Є внутрішній план гігієни та дезінфекції'], ['special', 'Є процедурні або особливі приміщення']],
+    quoteTitle: 'Ціна — після огляду', quoteText: 'Фінальна вартість — після огляду обʼєкта та погодження зон, частоти й протоколу робіт.',
+    quotePills: ['Огляд обʼєкта', 'Погодження зон і протоколу', 'Пропозиція за 24 години'],
+  },
+  // owner's rule (Oct 2026): 100 m² of an office = one hour of cleaning. The real time depends on the checklist
+  // (280 m² take 3 h, 120 m² with a long checklist take 5 h) — so the site gives only an approximate sum
+  offices: {
+    name: 'Офіс, коворкінг', icon: 'office', kindQ: 'Тип обʼєкта', kinds: ['Офіс', 'Коворкінг'],
+    area: ['Площа офісу', 30, 1000, 150], setup: 0,
+    zones: [{ id: 'all', share: 1, norm: 100 }],
+    times: [['before', 'До робочого дня'], ['after', 'Після робочого дня'], ['custom', 'Індивідуальний час']], timeDef: 'after',
+    outNote: 'Рахуємо за площею офісу — точна вартість залежить від переліку робіт у чек-листі.',
+  },
+  shops: {
+    name: 'Магазин, бутик, шоурум', icon: 'shop', kindQ: 'Тип обʼєкта', kinds: ['Магазин', 'Бутик', 'Шоурум', 'Салон'],
+    area: ['Площа магазину', 30, 600, 100], setup: .5,
+    zones: [{ id: 'hall', share: 1, norm: 130 }],
+    times: [['before', 'До відкриття'], ['after', 'Після закриття'], ['custom', 'Індивідуальний час']],
+    // showcase glass from the inside is part of the visit; the outer side is always a separate estimate
+    glass: [['no', 'Ні'], ['in', 'Зсередини'], ['both', 'З обох боків']], glassK: .1, glassMin: .2,
+    glassNote: 'У суму входить миття вітрин зсередини. Зовнішнє миття — за погодженим графіком та окремим розрахунком.',
+    adds: [['fitting', 'Примірочні', .15], ['staff', 'Кімната персоналу', .15], ['wc', 'Санвузол', .15], ['stock', 'Склад, підсобка', .15]],
+  },
+  restaurants: {
+    name: 'Ресторан, кафе, бар', icon: 'cloche', kindQ: 'Тип закладу', kinds: ['Ресторан', 'Кафе', 'Бар', 'Кондитерська', 'Інший заклад'],
+    area: ['Площа закладу', 40, 600, 120], areaHint: 'Загальна площа — разом із кухнею та службовими зонами.', setup: .5,
+    outNote: 'Рахуємо підтримуюче прибирання за площею. Тераса, склад і глибше прибирання кухні залежать від чек-листа — уточнимо після огляду.',
+    zoneQ: 'Які зони прибирати?', all: 'Увесь заклад',
+    zones: [{ id: 'hall', name: 'Зал', share: .55, norm: 90 }, { id: 'bar', name: 'Бар', share: .08, norm: 35 }, { id: 'wc', name: 'Санвузли', share: .07, norm: 25 },
+      { id: 'service', name: 'Службові зони', share: .1, norm: 70 }, { id: 'kitchen', name: 'Кухня', share: .2, norm: 30 }],
+  },
+  kitchens: {
+    name: 'Професійна кухня', icon: 'oven',
+    // regular = a schedule and a monthly sum; the other three are single jobs priced per cleaning
+    types: [{ id: 'regular', name: 'Регулярне прибирання', sub: 'за погодженим графіком', norm: 25, setup: .5, regular: true, dirtK: .5 },
+      { id: 'general', name: 'Генеральне прибирання', sub: 'накопичений жир, важкодоступні зони', norm: 3.5, photo: true },
+      { id: 'degrease', name: 'Інтенсивне знежирення', sub: 'обладнання, витяжки, кахель', norm: 4.5, photo: true },
+      { id: 'once', name: 'Разове прибирання', sub: 'одне прибирання без графіка', norm: 10 }],
+    area: ['Площа кухні', 10, 200, 40],
+    dirt: [['light', 'Легке', 1], ['mid', 'Середнє', 1.25], ['heavy', 'Сильне', 1.6]],
+    zoneQ: 'Зони та обладнання',
+    zones: [{ id: 'equip', name: 'Обладнання', share: .45 }, { id: 'hood', name: 'Витяжки та стіни', share: .3 }, { id: 'floor', name: 'Підлога та мийна зона', share: .25 }],
+    haccp: 'Є HACCP-план або таблиці контролю закладу',
+    photoNote: 'Фінальну ціну підтверджуємо після фото або огляду кухні.',
+  },
+};
+// Hotels page calculator. Owner's rules (Oct 2026): apartments / Airbnb and apart-hotels are counted from the apartment
+// tariff (APT) — cleaning after a short-term stay ×1, after a long-term stay ×2, mid-stay ×0.7; an apart-hotel is the same
+// plus common areas chosen by m²; a hotel cannot be counted simply — the manager prepares an individual offer.
+// Common areas are cleaned every day and get a separate monthly line (owner). Their sum uses the office norm —
+// 100 m² an hour at the business rate — as a working assumption: the owner gave no price, so it is shown as a range.
+const HOSP = {
+  kinds: [['apt', 'Апартаменти / Airbnb'], ['aparthotel', 'Апарт-готель'], ['hotel', 'Готель']],
+  types: [{ id: 'short', k: 1, name: 'Після короткострокової оренди', sub: 'між гостями, до наступного заїзду' },
+    { id: 'long', k: 2, name: 'Після довгострокової оренди', sub: 'після тривалого проживання' },
+    { id: 'mid', k: .7, name: 'Проміжне прибирання', sub: 'під час проживання гостей' }],
+  common: { min: 10, max: 300, def: 40, norm: 100 },
+  hotelTypes: [['checkout', 'Після виїзду (checkout)'], ['stayover', 'Під час проживання (stayover)'], ['both', 'Обидва типи']],
+};
+const APT = {
+  tiers: [50, 70, 90, 110, 130, 160, 190],
+  labels: ['до 50', '51–70', '71–90', '91–110', '111–130', '131–160', '161–190'],
+  at: [39.06, 46, 54.2, 60.45, 72.5, 85.5, 98.5],
+  sk: [28.12, 33.12, 39.02, 43.52, 52.2, 61.56, 70.92],
+  linen: { at: 10, sk: 8 },
+  counts: [ { id: '1', label: '1–4', d: 0 }, { id: '5', label: '5–9', d: .03 }, { id: '10', label: '10–19', d: .05 }, { id: '20', label: '20–49', d: .07 }, { id: '50', label: '50+', d: .10 } ],
+};
+
+/* ═════════ SERVICE PAGES ═════════ */
+const SVCS = {
+  private: {
+    basic: { slug: 'bazove-pribirannya', name: 'Базове прибирання', h1: 'Базове прибирання квартири', icon: 'spray', badge: '',
+      short: 'Для регулярного підтримання чистоти: підлога, пил, кухня та ванна.',
+      lead: 'Підтримуємо чистоту у квартирі без ваших зусиль: витираємо пил, миємо підлогу та основні поверхні, прибираємо кухню, ванну й туалет. Можна замовити разово або регулярно — зі знижкою до 7%.',
+      calc: { type: 'basic' }, incl: 'tier', steps: 'private', compare: true, related: ['general', 'deep', 'extras', 'windows'] },
+    general: { slug: 'generalne-pribirannya', name: 'Генеральне прибирання', h1: 'Генеральне прибирання квартири', icon: 'house', badge: '🎁 прасування',
+      short: 'Коли базового недостатньо: усе з базового, а ще вікна зсередини, духовка й холодильник.',
+      lead: 'Ретельне прибирання квартири, коли базового вже недостатньо: усе з базового пакета + вікна зсередини, духовка та холодильник усередині.',
+      calc: { type: 'general' }, incl: 'tier', steps: 'private', compare: true, related: ['basic', 'deep', 'windows', 'extras'] },
+    deep: { slug: 'gliboke-pribirannya', name: 'Глибоке прибирання', h1: 'Глибоке прибирання квартири', icon: 'fridge', badge: ['🎁 прасування', '🎁 хімчистка'],
+      short: 'Максимально детальне очищення всіх зон, включно з внутрішніми та важкодоступними поверхнями.',
+      lead: 'Максимально ретельне прибирання квартири: внутрішні поверхні шаф і техніки, вікна з обох боків, складний жир, вапняний наліт і важкодоступні зони.',
+      calc: { type: 'deep' }, incl: 'tier', steps: 'private', compare: true, related: ['general', 'moveout', 'extras', 'reno'] },
+    // the URL keeps the production slug; the page itself is about services ordered apart from a cleaning
+    extras: { slug: 'dodatkovi-poslugi', name: 'Окремі послуги', h1: 'Окремі послуги прибирання', sub: 'Без прибирання всієї квартири', icon: 'iron', badge: '',
+      short: 'Холодильник, духовка, балкон, прасування чи хімчистка — без прибирання всієї квартири.',
+      lead: 'Потрібна лише одна послуга? Помиємо холодильник чи духовку, приберемо балкон, випрасуємо речі або почистимо диван — окремо, без прибирання всієї квартири.',
+      calc: { type: 'extras' }, incl: 'prices', steps: 'extras', related: ['basic', 'general', 'deep'] },
+    // dry cleaning has a page of its own (Oct 2026): the same prices and the same order form as on «Окремі послуги»
+    chem: { slug: 'himchistka-mebliv-i-kilimiv', name: 'Хімчистка меблів і килимів', sub: 'Дивани, крісла, матраци й килими — у вас удома', icon: 'sofa', badge: '',
+      short: 'Дивани, крісла, килими та матраци — ціна за кожну річ.',
+      lead: 'Чистимо мʼякі меблі, матраци й килими у вас удома: прибираємо плями, пил і запахи з оббивки. Оберіть у калькуляторі, що потрібно почистити, — ціну побачите одразу.',
+      calc: { type: 'chem' }, incl: 'prices', steps: 'chem', related: ['extras', 'general', 'deep', 'windows'] },
+    windows: { slug: 'mittya-vikon', name: 'Миття вікон', icon: 'window', badge: '',
+      short: 'Вкажіть кількість вікон — і побачите орієнтовну ціну.',
+      lead: 'Миємо вікна зсередини й ззовні: скло, рами, підвіконня та відливи — без розводів. Вкажіть тип і кількість вікон, щоб одразу отримати орієнтовну вартість.',
+      calc: { type: 'windows' }, incl: 'windows', steps: 'windows', related: ['general', 'deep', 'reno', 'extras'] },
+    moveout: { slug: 'pribirannya-zayizd-viyizd', name: 'Прибирання при переїзді', sub: 'Перед заїздом або після виїзду', icon: 'boxkey', badge: '',
+      short: 'Перед заїздом або після виїзду: кухня й техніка, санвузли, внутрішні поверхні.',
+      lead: 'Підготуємо квартиру до передачі орендодавцю або до вашого заїзду: кухня й техніка, санвузли, внутрішні поверхні та важкодоступні місця.',
+      calc: { type: 'moveout' }, incl: 'moveout', steps: 'moveout', related: ['deep', 'windows', 'reno', 'extras'] },
+    reno: { slug: 'pribirannya-pislya-remontu', name: 'Прибирання після ремонту', icon: 'roller', badge: '',
+      short: 'Будівельний пил і сліди ремонту — оцінюємо за фото, оплата за фактичний час.',
+      lead: 'Ремонт завершено — далі наша черга. Прибираємо будівельний пил і залишкові забруднення, миємо поверхні, сантехніку та вікна. Після прибирання квартира готова до облаштування та заселення.',
+      calc: { type: 'reno' }, incl: 'reno', steps: 'reno', related: ['windows', 'moveout', 'extras', 'deep'] },
+  },
+  business: {
+    klining: { slug: 'klining-dlya-biznesu', name: 'Клінінг для бізнесу', icon: 'office', tag: 'офіси, ресторани, спортзали',
+      short: 'Прибирання офісів і комерційних приміщень за договором.',
+      lead: 'Прибираємо офіси, готелі й комерційні приміщення будь-якого розміру — за договором, з персональним менеджером і всіма документами для бухгалтерії.',
+      calc: { obj: 'office', freq: 2 }, incl: 'bizRegular', steps: 'business', related: ['basic', 'windows', 'airbnb', 'extras'],
+      faq: [] },
+    basic: { slug: 'bazove-pribirannya', name: 'Регулярне прибирання для бізнесу', icon: 'spray', tag: 'за графіком',
+      short: 'Чисто щодня або щотижня — за вашим графіком.',
+      lead: 'Прибираємо офіси, магазини й студії за сталим графіком — до або після робочого дня, щодня чи кілька разів на тиждень.',
+      calc: { obj: 'office', freq: 3 }, incl: 'bizRegular', steps: 'business', related: ['klining', 'general', 'windows', 'extras'],
+      faq: [
+        ['Можна прибирати до 7:00 або після 22:00?', 'Так. Особливі умови, як-от ранній чи нічний час, враховуємо в розрахунку.'],
+        ['Чи є знижка за обсяг?', 'Для великих обсягів і мереж локацій розраховуємо індивідуальну ставку — напишіть нам.'],
+      ] },
+    general: { slug: 'generalne-pribirannya', name: 'Генеральне прибирання для бізнесу', icon: 'house', tag: 'разово, ретельно',
+      short: 'Разове ретельне прибирання всього обʼєкта.',
+      lead: 'Разово й ретельно: усе з регулярного прибирання, а ще вікна зсередини, кухонна техніка, двері, плінтуси й важкодоступні місця.',
+      calc: { obj: 'office', freq: 0, hours: 4, cleaners: 2 }, incl: 'bizGeneral', steps: 'business', related: ['deep', 'windows', 'reno', 'klining'],
+      faq: [['Скільки часу займає?', 'Залежить від площі й стану приміщення. Для великих обʼєктів менеджер приїде на огляд і погодить графік.']] },
+    deep: { slug: 'gliboke-pribirannya', name: 'Глибоке прибирання для бізнесу', icon: 'fridge', tag: 'техніка й шафи всередині',
+      short: 'Найретельніше прибирання з технікою та шафами всередині.',
+      lead: 'Найретельніше прибирання комерційного приміщення: шафи й техніка всередині, жир і накип, вікна з обох боків — перед відкриттям, після сезону або перед здачею обʼєкта.',
+      calc: { obj: 'office', freq: 0, hours: 5, cleaners: 2, dirty: true }, incl: 'bizDeep', steps: 'business', related: ['general', 'reno', 'windows', 'klining'],
+      faq: [['Можна провести у вихідні?', 'Так, щоб не заважати вашій команді. Ми прибираємо щодня, включно з вихідними.']] },
+    windows: { slug: 'mittya-vikon', name: 'Миття вікон для бізнесу', icon: 'window', tag: 'оцінка онлайн', own: true,
+      short: 'Офісні вікна, вітрини, скляні фасади й перегородки.',
+      lead: 'Миємо офісні вікна, вітрини, скляні фасади, двері та внутрішні перегородки. Працюємо разово або за регулярним графіком — з рамами, підвіконнями та без розводів.',
+      trust: 'Чисте скло без слідів і розводів — до початку робочого дня або у погоджений час',
+      calc: { obj: 'windows' }, steps: 'windows', related: ['klining', 'basic', 'extras', 'reno'],
+      inclTitle: 'Що входить у миття вікон', inclSub: 'Рами, профілі та підвіконня — уже у вартості.',
+      inclOwn: [
+        { t: 'Вікна та скляні фасади', icon: 'window', items: ['Скло зсередини та ззовні за доступності', 'Рами, профілі та ущільнювачі', 'Підвіконня та відливи'] },
+        { t: 'Вітрини та скляні двері', icon: 'shop', items: ['Скло без розводів', 'Видалення відбитків', 'Рами й контактні зони'] },
+        { t: 'Внутрішні скляні поверхні', icon: 'office', items: ['Офісні перегородки', 'Скляні двері', 'Дзеркала за погодженим обсягом'] },
+        { t: 'Додатково', icon: 'plus', add: true, items: ['Жалюзі', 'Москітні сітки', 'Наклейки та скотч', 'Складні забруднення'] },
+      ],
+      inclInfo: [['receipt', '<b>Жалюзі — 15 € netto за вікно.</b> Наклейки, скотч і складні забруднення оцінюємо за фото — вони потребують більше часу.']],
+      uspTitle: 'Зручно для бізнесу',
+      usp: [
+        ['clock', 'Регулярне миття без нагадувань', 'Фіксуємо графік у договорі та приїжджаємо у погоджені дні — зручно для офісів, магазинів, ресторанів і шоурумів.'],
+        ['window', 'Чисте скло до початку дня', 'Чисте скло без слідів і розводів — до початку робочого дня або у погоджений час.'],
+        ['shield', 'Зовнішня сторона — за безпечного доступу', 'Ззовні миємо із землі або з драбини. Складний чи висотний доступ оцінюємо окремо — після фото або огляду.'],
+      ],
+      faqTitle: 'Питання про миття вікон для бізнесу',
+      faq: [
+        ['Як формується ціна?', 'Рахуємо за часом роботи: {bwrate} за годину. Час залежить від типу й кількості скла, сторін і забруднення — калькулятор одразу покаже орієнтовну суму. Мінімальне замовлення — {bwmin}.'],
+        ['Чи достатньо фото для оцінки?', 'Так. Для більшості обʼєктів достатньо фото й кількості вікон. Для великих фасадів або складного доступу менеджер приїде на огляд.'],
+        ['Чи миєте вітрини та фасадне скло?', 'Так: вітрини, скляні фасади, двері та внутрішні перегородки. Великі вітрини й фасади в калькуляторі можна вказати площею.'],
+        ['Чи миєте зовні?', 'Так, за умови безпечного доступу — із землі або з драбини.'],
+        ['Що, якщо потрібен висотний доступ?', 'Складний або висотний доступ оцінюємо окремо — після фото чи огляду обʼєкта.'],
+        ['Чи можна замовити регулярне миття?', 'Так. Фіксуємо графік у договорі — щомісяця, раз на квартал або інакше — та приїжджаємо у погоджені дні.'],
+        ['Чи входять рами та підвіконня?', 'Так: рами, профілі, ущільнювачі, підвіконня та відливи — у вартості.'],
+        ['Чи миєте жалюзі?', 'Так, окремою послугою — 15 € netto за вікно.'],
+        ['Чи видаляєте наклейки та будівельні забруднення?', 'Так, але оцінюємо їх окремо: наклейки, скотч, фарба чи цемент потребують більше часу. Надішліть фото — підкажемо вартість.'],
+        ['Як щодо договору, ПДВ та оплати?', '{vat} Працюємо за офіційним договором, надаємо інвойси та документи для бухгалтерії.'],
+      ],
+      final: ['Потрібне миття вікон або вітрин для бізнесу?', 'Вкажіть кількість або надішліть фото — розрахуємо вартість і підготуємо пропозицію протягом 24 годин.', 'Розрахувати вартість'],
+      waText: 'Добрий день! Потрібне миття вікон для бізнесу. Надсилаю фото.' },
+    airbnb: { slug: 'pribirannya-airbnb-ta-korotkostrokovoyi-orendi', name: 'Прибирання апартаментів та Airbnb', icon: 'bed', tag: 'знижка до 10%',
+      short: 'Підготовка до чек-іну для керуючих компаній.',
+      lead: 'Для керуючих компаній і власників кількох апартаментів: прибирання за чек-листом, свіжа білизна, перевірка квартири й готовність до заїзду. Чим більше обʼєктів, тим нижча ціна — до −10%.',
+      calc: { obj: 'apartments' }, incl: 'airbnb', steps: 'airbnb', related: ['klining', 'windows', 'deep', 'extras'],
+      faq: [['Як працює обʼємна ставка?', 'Від 5 апартаментів ціна за прибирання стає нижчою, і що більше обʼєктів, то вигідніше — до −10%. Калькулятор враховує це автоматично.']] },
+    extras: { slug: 'dodatkovi-poslugi', name: 'Додаткові послуги для бізнесу', icon: 'iron', tag: 'жалюзі, рослини, хімчистка',
+      short: 'Жалюзі, догляд за рослинами, хімчистка меблів і килимів.',
+      lead: 'Додаткові послуги до регулярного прибирання: миття вікон і жалюзі, хімчистка мʼяких меблів і килимів, догляд за рослинами. Ставки фіксуються в договорі.',
+      calc: { obj: 'office', freq: 1 }, incl: 'bizPrices', steps: 'business', related: ['klining', 'windows', 'basic', 'general'],
+      faq: [['Можна додати послугу до існуючого договору?', 'Так, менеджер додасть її до графіка та інвойсу.']] },
+    moveout: { slug: 'pribirannya-zayizd-viyizd', name: 'Прибирання при переїзді офісу', icon: 'boxkey', tag: 'за оглядом',
+      short: 'Прибирання перед заїздом або після виїзду з офісу.',
+      lead: 'Прибираємо офіс перед заїздом або після виїзду: робочі зони, кухні, санвузли, вікна й підлогу. Ціну розраховуємо після огляду.',
+      calc: { obj: 'other' }, incl: 'bizGeneral', steps: 'business', related: ['reno', 'general', 'windows', 'klining'],
+      faq: [['Як швидко отримаю пропозицію?', 'Протягом 24 годин після опису або огляду обʼєкта.']] },
+    reno: { slug: 'pribirannya-pislya-remontu', name: 'Прибирання після ремонту для бізнесу', icon: 'roller', tag: 'за оглядом', own: true,
+      short: 'Після ремонту, реконструкції або облаштування — до дати відкриття.',
+      lead: 'Після ремонту, реконструкції або облаштування комерційного приміщення прибираємо будівельний пил і залишкові забруднення, очищуємо поверхні, скло, санвузли та службові зони. Працюємо з офісами, магазинами, ресторанами, фітнес-центрами та іншими бізнес-обʼєктами.',
+      trust: 'Команду формуємо під площу та дедлайн обʼєкта',
+      calc: { obj: 'other' }, steps: 'renoBiz', related: ['windows', 'klining', 'basic', 'moveout'],
+      // the request card: the deadline matters more than a «schedule» for a one-off job
+      side: { steps: [['Опишіть обʼєкт', 'тип обʼєкта, площа, дата завершення ремонту, бажана дата прибирання'], ['Огляд або фото', 'менеджер приїде чи оцінить за фото'], ['Пропозиція за 24 години', 'з договором і документами']],
+        note: 'Фінальна вартість — після фото або огляду обʼєкта та погодження обсягу робіт.', btn: 'Надіслати обʼєкт на оцінку' },
+      inclTitle: 'Що входить у прибирання після ремонту', inclSub: 'За видами робіт — обсяг погоджуємо до початку.',
+      inclOwn: [
+        { t: 'Будівельний пил', icon: 'roller', items: ['Підлога, стіни та доступні поверхні', 'Двері, плінтуси, радіатори', 'Розетки, вимикачі, підвіконня', 'Доступні елементи інженерних комунікацій'] },
+        { t: 'Сліди ремонтних матеріалів', icon: 'search', items: ['Залишки клею, фарби, затирки, силікону', 'Очищення в межах безпечного для поверхні методу'] },
+        { t: 'Скло та інтерʼєр', icon: 'window', items: ['Скляні перегородки', 'Двері, дзеркала', 'Світильники та доступні елементи інтерʼєру'] },
+        { t: 'Санвузли та службові зони', icon: 'bath', items: ['Сантехніка', 'Кухонні та службові зони', 'Фінальне вологе прибирання'] },
+      ],
+      inclInfo: [['shield', 'Видаляємо залишки будівельних матеріалів лише там, де це можна зробити без пошкодження поверхні.']],
+      uspTitle: 'Як організовуємо роботу',
+      usp: [
+        ['clock', 'Підготовка обʼєкта до відкриття', 'Плануємо команду та обсяг робіт з урахуванням дати відкриття, передачі орендарю або здачі обʼєкта замовнику.'],
+        ['people', 'Команда під площу та дедлайн', 'Команду формуємо під площу та дедлайн обʼєкта.'],
+        ['roller', 'Початок — після завершення робіт', 'Прибирання починаємо після завершення пилових і будівельних робіт. На обʼєкті мають бути доступні вода та електроенергія.'],
+        ['boxkey', 'Будівельне сміття', 'Вивезення великого будівельного сміття не входить у стандартну послугу.'],
+      ],
+      faqTitle: 'Питання про прибирання після ремонту',
+      faq: [
+        ['Як формується ціна?', 'Фінальна вартість — після фото або огляду обʼєкта та погодження обсягу робіт: вона залежить від площі, стану приміщення й термінів.'],
+        ['Чи достатньо фото для оцінки?', 'Для невеликих обʼєктів — так: надішліть площу, фото й дату, до якої обʼєкт має бути готовий.'],
+        ['Чи потрібен огляд обʼєкта?', 'Не завжди. На великі площі або складні забруднення менеджер приїжджає, щоб точно оцінити обсяг робіт.'],
+        ['Чи вивозите будівельне сміття?', 'Вивезення великого будівельного сміття не входить у стандартну послугу.'],
+        ['Чи видаляєте фарбу, клей, цемент, силікон?', 'Так — залишки клею, фарби, затирки й силікону видаляємо там, де це можна зробити без пошкодження поверхні.'],
+        ['Коли можна починати прибирання?', 'Після завершення пилових і будівельних робіт. На обʼєкті мають бути доступні вода та електроенергія.'],
+        ['Чи можете підготувати обʼєкт до конкретної дати відкриття?', 'Так. Плануємо команду та обсяг робіт з урахуванням дати відкриття, передачі орендарю або здачі обʼєкта замовнику — вкажіть дату в заявці.'],
+        ['Скільки людей буде в команді?', 'Команду формуємо під площу та дедлайн обʼєкта.'],
+        ['Чи миєте вікна та скляні перегородки?', 'Скляні перегородки, двері та дзеркала входять у прибирання. Миття вікон і фасадів додаємо до пропозиції за потреби.'],
+        ['Хто надає засоби та обладнання?', 'Засоби, інвентар і обладнання — наші.'],
+        ['Як щодо договору, ПДВ та оплати?', '{vat} Працюємо за офіційним договором, надаємо інвойси та документи для бухгалтерії.'],
+      ],
+      final: ['Ремонт уже завершується?', 'Надішліть площу, фото та дату, до якої обʼєкт має бути готовий — підготуємо оцінку та комерційну пропозицію протягом 24 годин.', 'Надіслати обʼєкт на оцінку'],
+      waText: 'Добрий день! Потрібне прибирання після ремонту комерційного приміщення. Надсилаю площу, фото та дату готовності.' },
+  },
+};
+// Package pages. Three pages — three different jobs, so each has its own "what's included", questions and closing call:
+// basic keeps a home clean, general is a thorough one-off, deep goes into inner surfaces and hard dirt.
+// zones: [icon, name, actions] — an action starting with "+" is what this package adds to the previous one.
+// faq tokens ({n} tasks, {from} price, {loc} city, {time} hours, {crew} cleaners) are filled in from the city's tables.
+const PAY_QA = ['Як і коли оплачувати?', 'Після прибирання — карткою, за рахунком або готівкою.'];
+const TIER_PAGE = {
+  basic: {
+    inclSub: '{n} за чек-листом — усе, що потрібно для регулярної чистоти.',
+    zones: [
+      ['sofa', 'Кімнати', ['Витираємо пил з меблів, полиць і підвіконь', 'Пилососимо й миємо підлогу', 'Протираємо дзеркала та скляні поверхні', 'Наводимо лад на поверхнях і провітрюємо']],
+      ['oven', 'Кухня', ['Миємо посуд і мийку', 'Протираємо стільницю й робочі поверхні', 'Фасади й техніка ззовні', 'Виносимо сміття']],
+      ['bath', 'Ванна й туалет', ['Чистимо унітаз, раковину, ванну або душ', 'Крани й дзеркала — до блиску', 'Полиці й поверхні ззовні', 'Миємо підлогу']],
+    ],
+    note: 'Не входять: миття вікон, духовка й холодильник усередині та шафи всередині. Їх можна додати в калькуляторі.',
+    final: ['Готові до базового прибирання?', 'Розрахуйте точну вартість за площею квартири — разово або регулярно зі знижкою до 7%.'],
+    faq: [
+      ['Що входить у базове прибирання?', '{n} за чек-листом. У кімнатах витираємо пил, пилососимо й миємо підлогу, протираємо дзеркала. На кухні миємо посуд і мийку, стільницю, фасади й техніку ззовні, виносимо сміття. У ванній і туалеті чистимо сантехніку, крани, дзеркала та миємо підлогу.'],
+      ['Що не входить у базове прибирання?', 'У базове прибирання не входять миття вікон, очищення духовки та холодильника всередині й прибирання шаф усередині. У генеральному прибиранні включені вікна зсередини та духовка й холодильник усередині, у глибокому — також вікна з обох боків і шафи всередині. Окремі роботи можна додати в калькуляторі.'],
+      ['Скільки коштує базове прибирання?', 'У {loc} — {from}. Ціна залежить від площі квартири й фіксується до прибирання, без доплат після. Вкажіть площу в калькуляторі — він одразу покаже точну суму.'],
+      ['Скільки клінерів приїде і скільки часу це займе?', 'Залежить від площі: {crew} клінерів і {time} год роботи. Калькулятор одразу покаже склад команди й тривалість для вашої квартири.'],
+      ['Чи можна замовити базове прибирання регулярно?', 'Так. Увімкніть у калькуляторі «Зробити регулярним» і оберіть графік: щотижня −7%, раз на 2 тижні −5%, раз на місяць −3% на кожне прибирання. Для регулярних клієнтів закріплюємо ту саму команду.'],
+      PAY_QA,
+      ['Чи потрібно бути вдома під час прибирання?', 'Не обовʼязково. Багато клієнтів залишають ключі й повертаються вже в чисту квартиру. Хочете бути вдома — теж без проблем.'],
+    ],
+  },
+  general: {
+    inclSub: 'Усе з базового пакета й додаткові роботи — разом {n}. Жирним виділено те, чого немає в базовому.',
+    zones: [
+      ['sofa', 'Кімнати', ['Пил, підлога, дзеркала й скляні поверхні', 'Двері, ручки, вимикачі й радіатори', '+Накопичений бруд і важкодоступні місця']],
+      ['oven', 'Кухня', ['Посуд, мийка, стільниця й фасади', '+Духовка всередині', '+Холодильник усередині', '+Поверхні й техніка ззовні — детально']],
+      ['bath', 'Ванна й туалет', ['Унітаз, раковина, ванна або душ', 'Крани, дзеркала, полиці ззовні', 'Миємо підлогу']],
+      ['window', 'Вікна й балкон', ['+Вікна з внутрішнього боку', '+Балкон або тераса — за потреби']],
+    ],
+    note: 'Не входять: вікна ззовні та шафи всередині. Їх можна додати в калькуляторі або обрати глибоке прибирання.',
+    final: ['Готові до генерального прибирання?', 'Розрахуйте точну вартість за площею квартири — ціна фіксується до прибирання.'],
+    upsell: ['Після генерального прибирання', 'Підтримуйте чистоту регулярно', 'Замовте базове прибирання за графіком — кожне буде дешевшим: {reg}'],
+    faq: [
+      ['Що входить у генеральне прибирання?', 'Усе з базового пакета й додаткові роботи: вікна зсередини, духовка та холодильник усередині, балкон або тераса, накопичений бруд і важкодоступні місця. Разом {n} за чек-листом.'],
+      ['Чим генеральне прибирання відрізняється від базового та глибокого?', 'Базове — для регулярного підтримання чистоти. Генеральне — для ретельного очищення основних зон: додаються вікна зсередини, духовка та холодильник усередині. Глибоке — коли потрібно очистити також внутрішні поверхні шаф і техніки, складні забруднення та важкодоступні місця; вікна там миємо з обох боків.'],
+      ['Чи входить миття вікон?', 'Так: у генеральне прибирання входить миття вікон з внутрішнього боку. Миття ззовні є в глибокому прибиранні або додається окремо в калькуляторі.'],
+      ['Скільки коштує генеральне прибирання?', 'У {loc} — {from}. Ціна залежить від площі квартири й фіксується до прибирання. Точну суму одразу покаже калькулятор.'],
+      ['Скільки часу займає генеральне прибирання?', 'Залежно від площі — {time} год, працює команда {crew} клінерів. Калькулятор покаже тривалість і склад команди для вашої квартири.'],
+      ['Що означає 1 година прасування у подарунок?', 'Один клінер прасує ваші речі до 60 хвилин — це вже входить у ціну генерального прибирання. Якщо речей більше, додаткові години прасування можна додати в калькуляторі.'],
+      PAY_QA,
+    ],
+  },
+  deep: {
+    when: [
+      ['clock', 'Давно не було детального прибирання', 'Бруд накопичився там, куди звичайне прибирання не дістається.'],
+      ['hanger', 'Потрібно очистити внутрішні поверхні', 'Шафи, шухляди, духовка, холодильник та інша техніка всередині.'],
+      ['spray', 'Є виражений жир або вапняний наліт', 'Кухня, кахель, шви й сантехніка потребують окремої роботи.'],
+      ['house', 'Потрібне ретельне сезонне прибирання', 'Максимально детально оновити всю квартиру — разом із вікнами з обох боків.'],
+    ],
+    inclSub: 'Усе з генерального пакета й максимальна деталізація — разом {n}. Жирним виділено те, чого немає в генеральному.',
+    zones: [
+      ['sofa', 'Кімнати', ['Пил, підлога, дзеркала, важкодоступні місця', '+Меблі детально, включно з прихованими зонами', '+Складаємо речі в гардеробі']],
+      ['oven', 'Кухня', ['Посуд, мийка, стільниця й фасади', 'Плита й техніка ззовні — детально', 'Духовка й холодильник усередині']],
+      ['bath', 'Ванна й туалет', ['Сантехніка, крани, дзеркала, підлога', '+Кахель і міжплиточні шви', '+Шафи у ванній всередині']],
+      ['window', 'Вікна й балкон', ['Вікна зсередини', '+Вікна ззовні — за умови безпечного доступу', 'Балкон або тераса — за потреби']],
+      ['hanger', 'Шафи й техніка всередині', ['+Шафи, гардероби й шухляди', '+Кухонні шафи', '+Мікрохвильовка, витяжка та інша техніка']],
+      ['spray', 'Складні забруднення', ['+Жир і стійкий бруд на кухні', '+Накип і вапняний наліт у ванній']],
+    ],
+    note: 'Вікна ззовні миємо за умови безпечного доступу до зовнішньої сторони.',
+    final: ['Потрібне максимально ретельне прибирання?', 'Розрахуйте точну вартість за площею квартири — без прихованих доплат.'],
+    upsell: ['Після глибокого прибирання', 'Підтримуйте результат базовим прибиранням', 'Замовте базове прибирання за графіком — кожне буде дешевшим: {reg}'],
+    faq: [
+      ['Коли потрібне глибоке прибирання?', 'Коли детального прибирання давно не було, треба очистити шафи й техніку всередині, є виражений жир чи вапняний наліт або потрібне максимально ретельне сезонне прибирання. Це прибирання житлової, мебльованої квартири: для переїзду й після ремонту в нас є окремі послуги.'],
+      ['Чим глибоке прибирання відрізняється від генерального?', 'У генеральному ретельно прибираємо основні зони, миємо вікна зсередини, духовку та холодильник усередині. У глибокому додаються внутрішні поверхні шаф і всієї кухонної техніки, вікна з обох боків, кахель і шви, складний жир та вапняний наліт. Якщо шафи всередині й стійкі забруднення вас не турбують — вистачить генерального.'],
+      ['Що саме входить у глибоке прибирання?', '{n} за чек-листом: усе з генерального пакета, а ще шафи, гардероби й шухляди всередині, мікрохвильовка, витяжка та інша техніка всередині, кахель і міжплиточні шви, жир, накип і вапняний наліт, вікна з обох боків.'],
+      ['Чи миєте вікна ззовні?', 'Так, у глибоке прибирання входять вікна з обох боків — за умови безпечного доступу до зовнішньої сторони. Для вікон вище 3 метрів потрібне спецобладнання — менеджер уточнить це заздалегідь.'],
+      ['Що означає 1 година хімчистки у подарунок?', 'Це до 60 хвилин роботи з хімчистки мʼяких меблів, а не чистка будь-якого дивана чи комплекту повністю. За цей час можна почистити, наприклад, диван до 2 метрів або два крісла. Оберіть меблі в калькуляторі — він сам відніме вартість того, що вкладається в годину. Другий подарунок — 1 година прасування: один клінер прасує ваші речі до 60 хвилин.'],
+      ['Скільки коштує і скільки триває глибоке прибирання?', 'У {loc} — {from}; ціна залежить від площі й фіксується до прибирання. Зазвичай це {time} год роботи команди {crew} клінерів — калькулятор покаже точно.'],
+      PAY_QA,
+    ],
+  },
+};
+// Single-service pages (move-in / move-out, windows): the calculator serves only that service and the page has its own
+// blocks, questions and closing call. faq tokens: {loc} {from} {time} {crew} {min} {rate}.
+const SOLO_PAGE = {
+  moveout: {
+    // one service and one price — two situations with different accents: [id, icon, title, line, accents]
+    moves: [
+      ['out', 'boxkey', 'Я виїжджаю', 'Готуємо квартиру до передачі орендодавцю — щоб мінімізувати зауваження до чистоти.',
+        ['Кухонна техніка й шафи — всередині та ззовні', 'Побутові забруднення та сліди, що піддаються очищенню', 'Вапняний наліт, кахель і шви у ванній', 'Контроль за чек-листом і фото після завершення']],
+      ['in', 'house', 'Я заїжджаю', 'Готуємо квартиру до вашого заселення — щоб почати в чистому просторі.',
+        ['Кухня й техніка всередині — перед першим використанням', 'Санвузли: сантехніка, кахель, змішувачі', 'Шафи й шухляди всередині — можна одразу розкладати речі', 'Підлога, двері, ручки й вимикачі начисто']],
+    ],
+    prep: [
+      ['boxkey', 'Звільніть квартиру від особистих речей', 'Для повного прибирання при виїзді поверхні, шафи й підлога мають бути вільні. Мебльовані квартири теж прибираємо.'],
+      ['bucket', 'Вода та електрика мають бути доступні', 'Без них не вдасться помити техніку, сантехніку й підлогу.'],
+      ['fridge', 'Підготуйте холодильник', 'Звільніть його від продуктів, а морозилку розморозьте заздалегідь, якщо її треба помити.'],
+      ['people', 'Доступ до квартири', 'Бути вдома не обовʼязково — заздалегідь погодимо доступ до квартири.'],
+    ],
+    promo: ['Діє й на прибирання при переїзді. <b id="welcomeCalc"></b>', 'welcome'],
+    final: ['Переїжджаєте?', 'Розрахуйте вартість прибирання та забронюйте команду на потрібну дату.'],
+    faq: [
+      ['Коли оплачувати прибирання при переїзді?', 'Наперед. Для цієї послуги потрібна передоплата, оскільки ми резервуємо команду та час під конкретну дату передачі або заїзду. Усі інші послуги ви оплачуєте після прибирання.'],
+      ['Чи допоможе це повернути депозит?', 'Ми готуємо квартиру до передачі за чек-листом і усуваємо забруднення, що піддаються очищенню. Однак повернення депозиту залежить також від стану квартири, можливих пошкоджень і умов договору оренди, тому гарантувати повернення депозиту ми не можемо.'],
+      ['Що входить у прибирання при переїзді?', 'Кухня з усією технікою та шафами всередині, санвузли з кахлем і швами, кімнати з вбудованими меблями, плінтуси, двері, вимикачі й радіатори, підлога, балкон і вікна зсередини. Повний перелік — у блоці «Що входить».'],
+      ['Чи входить миття вікон?', 'Так, зсередини. Миття ззовні додається окремо в калькуляторі — за умови безпечного доступу до зовнішньої сторони.'],
+      ['Як підготувати квартиру до прибирання?', 'Для повного прибирання при виїзді квартира має бути звільнена від особистих речей, а вода та електрика — доступні. Холодильник звільніть від продуктів; якщо треба помити морозилку — розморозьте її заздалегідь. Мебльовані квартири теж прибираємо.'],
+      ['За скільки часу до виїзду замовляти прибирання?', 'Найкраще — за 2–3 дні до передачі квартири орендодавцю: залишиться час, якщо щось треба буде доробити. Якщо часу мало, скажіть менеджеру про терміни — прибираємо щодня, включно з вихідними.'],
+      ['Скільки коштує і скільки триває прибирання?', 'У {loc} — {from}; ціна залежить від площі й фіксується до прибирання. Зазвичай це {time} год роботи команди {crew} клінерів — калькулятор покаже точно.'],
+    ],
+  },
+  reno: {
+    // one residential checklist, in the order a person after a renovation thinks about it: [icon, title, line]
+    incl: [
+      ['roller', 'Будівельний пил', 'Зі стін, стель, підлоги та всіх поверхонь.'],
+      ['search', 'Важкодоступні місця', 'Ніші, плінтуси, радіатори, корпусні меблі всередині та ззовні.'],
+      ['spray', 'Сліди будівельних матеріалів', 'Фарба, клей, затирка, цемент — якщо їх можна безпечно видалити без пошкодження поверхні.'],
+      ['window', 'Вікна, рами та підвіконня', 'Миємо скло й профілі від пилу та слідів ремонту.'],
+      ['house', 'Двері, розетки, радіатори', 'Протираємо двері, ручки, розетки, вимикачі й радіатори.'],
+      ['bath', 'Сантехніка й вологе прибирання', 'Миємо сантехніку та двічі миємо підлогу наприкінці.'],
+    ],
+    note: 'Глибоке прибирання — для житлової квартири та складних побутових забруднень. Прибирання після ремонту — для будівельного пилу й слідів ремонтних матеріалів.',
+    prep: [
+      ['clock', 'Ремонт має бути завершено', 'Прибирання проводимо після завершення пилових і будівельних робіт.'],
+      ['bucket', 'Вода та електроенергія', 'На обʼєкті мають бути доступні вода та електроенергія.'],
+      ['boxkey', 'Будівельне сміття', 'Дрібне сміття та упаковку від матеріалів вивозимо. Вивезення великого будівельного сміття не входить у стандартне прибирання.'],
+    ],
+    final: ['Ремонт уже завершено?', 'Надішліть фото — оцінимо обсяг робіт і зорієнтуємо по вартості.'],
+    faq: [
+      ['Як розраховується ціна?', 'За фактичний час роботи: {rate} за годину роботи одного клінера. Надішліть фото — менеджер оцінить обсяг робіт, скаже, скільки клінерів потрібно, і назве орієнтовний бюджет.'],
+      ['Що надіслати для оцінки?', '5–10 фото або коротке відео: загальний вигляд кімнат, підлога, вікна, санвузли та місця з найсильнішими забрудненнями. Вкажіть площу і який був ремонт — косметичний чи капітальний.'],
+      ['Що входить у прибирання після ремонту?', 'Будівельний пил зі стін, підлоги та поверхонь, пил у важкодоступних місцях, сліди будівельних матеріалів, вікна з рамами та підвіконнями, двері, розетки й радіатори, сантехніка та фінальне вологе прибирання.'],
+      ['Чи видаляєте фарбу, клей і цемент?', 'Видаляємо сліди фарби, клею, затирки та інших будівельних матеріалів, якщо їх можна безпечно видалити без пошкодження поверхні.'],
+      ['Чи вивозите будівельне сміття?', 'Дрібне будівельне сміття та упаковку від матеріалів вивозимо. Вивезення великого будівельного сміття не входить у стандартне прибирання: якщо його багато, скажіть менеджеру заздалегідь — обговоримо окремо.'],
+      ['Чи входить миття вікон?', 'Так: миємо скло, рами та підвіконня від пилу й слідів ремонту. Час на вікна входить у загальну оцінку.'],
+      ['Скільки клінерів приїде і скільки часу це займе?', 'Залежить від площі та масштабу ремонту. Однокімнатна квартира після косметичного ремонту — зазвичай 4–6 годин, після капітального — більше. Після фото менеджер скаже, яка команда потрібна і скільки часу закласти.'],
+      ['Чи має ремонт бути повністю завершений?', 'Так. Прибирання проводимо після завершення пилових і будівельних робіт — інакше пил осяде знову.'],
+      ['Що підготувати перед приїздом команди?', 'На обʼєкті мають бути доступні вода та електроенергія. Бути на місці не обовʼязково — заздалегідь погодимо доступ до квартири.'],
+      ['Коли і як оплачувати?', 'Після прибирання, за фактичний час роботи — карткою, за рахунком або готівкою.'],
+    ],
+  },
+  // separate services: no packages on this page — the minimum order is what has to be clear before, during and after the choice
+  extras: {
+    hourly: 'Клінер на годину — для того, що потрібно саме вам: хаускіпінг, допомогти розставити декор, нагодувати домашніх тварин та інші доручення. Опишіть завдання в заявці або надішліть свій список. Прибирання після ремонту, миття вікон і хімчистка мають окремі тарифи.',
+    final: ['Потрібна лише одна послуга?', 'Оберіть послуги в калькуляторі — одразу побачите суму до сплати з урахуванням мінімального замовлення.'],
+    faq: [
+      ['Чи можна замовити послугу без прибирання квартири?', 'Так. Холодильник, духовку, балкон, прасування чи хімчистку можна замовити окремо. Окреме замовлення — мінімум {min}.'],
+      ['Послуга коштує менше, ніж {min}. Скільки я заплачу?', 'До сплати буде {min} — це мінімальне замовлення. У цю суму можна додати інші послуги без доплати: калькулятор покаже, скільки ще залишилось.'],
+      ['Чому є мінімальне замовлення?', 'Мінімальна сума покриває виїзд клінера з професійними засобами та інвентарем. При додаванні послуг до основного прибирання мінімальна сума не застосовується.'],
+      ['Чи можна додати ці послуги до прибирання квартири?', 'Так. У калькуляторі базового, генерального чи глибокого прибирання відкрийте «Додаткові послуги» — мінімальна сума там не застосовується, а частина послуг уже входить у генеральне й глибоке прибирання.'],
+      ['Чи можна замовити лише прибирання балкона?', 'Так, балкон або терасу можна замовити окремо. Діє мінімальне замовлення {min}, тож разом із балконом можна додати інші послуги на цю суму.'],
+      ['Що таке погодинне прибирання?', 'Це робота одного клінера за {hourly} за годину — для того, що потрібно саме вам: хаускіпінг, допомогти розставити декор, нагодувати домашніх тварин та інші доручення. Опишіть завдання в заявці або надішліть свій список. Прибирання після ремонту, миття вікон і хімчистка мають окремі тарифи.'],
+      ['Які тканини ви чистите?', 'Мікрофібру, синтетику, рогожку, флок і шеніл. Бавовну, льон, вовну, велюр і оксамит — обережно, після тесту. Шкіру, екошкіру, замшу, нубук, віскозу, шовк і гобелен водою не чистимо. Не знаєте, яка у вас тканина? Надішліть фото у WhatsApp — підкажемо до бронювання.'],
+      ['Чи чистите матраци з обох боків?', 'Так, за бажанням: це +25% до ціни. Радимо для плям і запахів. Матрац висихає 6–12 годин.'],
+      ['Чи можна замовити лише миття вікон?', 'Так — це окрема послуга зі своїм калькулятором: <a href="{windows}">миття вікон</a>.'],
+      PAY_QA,
+    ],
+  },
+  // dry cleaning: fixed prices per piece; what the page must make clear — fabrics, drying time, the minimum order
+  chem: {
+    final: ['Потрібно почистити диван, матрац чи килим?', 'Оберіть меблі в калькуляторі — ціну побачите одразу. Не впевнені щодо тканини? Надішліть фото у WhatsApp.'],
+    faq: [
+      ['Скільки коштує хімчистка?', 'Ціна фіксована за кожен предмет і залежить від його розміру — усі ціни є в блоці «Послуги та ціни». Оберіть меблі в калькуляторі, і він одразу покаже суму. Мінімальне замовлення — {min}.'],
+      ['Що, якщо моє замовлення менше, ніж {min}?', 'До сплати буде {min} — це мінімальне замовлення. У цю суму можна додати ще меблі чи килим без доплати: калькулятор покаже, скільки залишилось.'],
+      ['Які тканини ви чистите?', 'Мікрофібру, синтетику, рогожку, флок і шеніл. Бавовну, льон, вовну, велюр і оксамит — обережно, після тесту. Шкіру, екошкіру, замшу, нубук, віскозу, шовк і гобелен водою не чистимо. Не знаєте, яка у вас тканина? Надішліть фото у WhatsApp — підкажемо до бронювання.'],
+      ['Скільки сохнуть меблі після чистки?', '6–12 годин. Провітрюйте кімнату й не сідайте на вологу оббивку, поки вона не висохне.'],
+      ['Чи виведете всі плями?', 'Свіжі побутові плями зазвичай зникають повністю. Старі або складні — від фарби, чорнила чи відбілювача — можуть зійти не до кінця. Надішліть фото у WhatsApp — менеджер підкаже до бронювання.'],
+      ['Скільки часу займає чистка?', 'Диван — близько години, крісло чи пуф — близько 30 хвилин, матрац — від години. Точний час залежить від розміру та стану меблів.'],
+      ['Чи чистите матраци з обох боків?', 'Так, за бажанням: це +25% до ціни. Радимо для плям і запахів. Матрац висихає 6–12 годин.'],
+      ['Як рахується ціна килима?', 'Невеликий килим — фіксована ціна за штуку. Більші килими рахуємо за площею: вкажіть її в калькуляторі, і він покаже суму.'],
+      ['Чи можна додати хімчистку до прибирання квартири?', 'Так. У калькуляторі прибирання відкрийте «Додаткові послуги» — мінімальна сума там не застосовується. А до глибокого прибирання до 1 години хімчистки мʼяких меблів додаємо в подарунок.'],
+      PAY_QA,
+    ],
+  },
+  windows: {
+    incl: ['Скло — зсередини або з обох боків, як оберете', 'Рами та профілі', 'Фурнітура', 'Підвіконня', 'Відливи'],
+    extra: ['Москітні сітки', 'Жалюзі', 'Наклейки та сліди скотчу', 'Сильні або будівельні забруднення'],
+    extraNote: 'Додаються в калькуляторі або за фото — менеджер підтвердить ціну.',
+    note: 'Ззовні миємо за умови безпечного доступу без спеціального висотного обладнання.',
+    // calculate → send photos → the manager confirms the final sum
+    flow: [['Розрахуйте орієнтовну ціну онлайн', 'Вкажіть тип і кількість вікон — сума зʼявиться одразу.'], ['Надішліть фото вікон', 'У WhatsApp або менеджеру після заявки.'], ['Менеджер підтвердить фінальну суму', 'Ще до приїзду команди.']],
+    terms: [
+      ['receipt', 'Мінімальне замовлення — {min}', 'Якщо за розрахунком виходить менше, замовлення коштує {min}. Це не ціна одного вікна.'],
+      ['clock', 'Рахуємо за часом роботи', '{rate} за годину. Час залежить від типу вікон, кількості сторін і забруднення — розрахунок видно в калькуляторі.'],
+      ['shield', 'Ззовні — за безпечного доступу', 'Миємо ззовні без спеціального висотного обладнання: з приміщення, з балкона або з драбини до 3 метрів.'],
+    ],
+    promo: ['Діє і на миття вікон: менеджер врахує знижку, коли підтверджуватиме ціну.', 'calc'],
+    final: ['Хочете чисті вікна без розводів?', 'Вкажіть кількість вікон — орієнтовну ціну побачите одразу.'],
+    faq: [
+      ['Скільки коштує миття вікон?', 'Залежить від кількості й типу вікон, сторін і забруднення — калькулятор одразу покаже орієнтовну суму. Рахуємо за часом роботи: {rate} за годину. Мінімальне замовлення — {min}.'],
+      ['Чому ціна орієнтовна?', 'Час залежить від розміру вікон, рам і забруднення. Калькулятор рахує за нашою методикою, а точну суму менеджер підтвердить за фото ваших вікон — ще до приїзду команди.'],
+      ['Що входить у вартість?', 'Скло зсередини або з обох боків — як оберете, рами та профілі, фурнітура, підвіконня й відливи. Москітні сітки та жалюзі додаються окремими опціями в калькуляторі.'],
+      ['Чи миєте вікна ззовні?', 'Так — за умови безпечного доступу без спеціального висотного обладнання: з приміщення, з балкона або з драбини до 3 метрів. Якщо доступ складніший, менеджер уточнить деталі за фото.'],
+      ['Як рахується велике або панорамне вікно?', 'У калькуляторі є окремий тип — панорамне вікно, приблизно 180 × 195 см. Якщо ваше вікно більше або нестандартної форми, оберіть найближчий тип і надішліть фото: менеджер уточнить суму.'],
+      ['Чи миєте москітні сітки та жалюзі?', 'Так. Додайте їх у калькуляторі на другому кроці: кожна сітка чи жалюзі додає до розрахунку трохи часу.'],
+      ['Що робити з будівельними забрудненнями або наклейками?', 'Оберіть у калькуляторі забруднення «Після ремонту»: фарба, цемент, плівка й сліди скотчу потребують більше часу. Надішліть фото — менеджер скаже, що саме вдасться очистити, і підтвердить ціну.'],
+      PAY_QA,
+    ],
+  },
+};
+const SVC_ORDER = {
+  private: ['basic', 'general', 'deep', 'moveout', 'windows', 'reno', 'chem', 'extras'],
+  business: ['klining', 'basic', 'general', 'deep', 'windows', 'airbnb', 'reno', 'extras', 'moveout'],
+};
+// Home cards
+const HOME_CARDS = {
+  private: ['basic', 'general', 'deep', 'moveout', 'windows', 'chem', 'reno'],
+  business: ['klining', 'basic', 'general', 'deep', 'windows', 'airbnb', 'reno', 'extras'],
+};
+
+// Included lists for non-tier pages
+const INCL = {
+  airbnb: [
+    { t: 'Житлова зона та спальня', items: ['Застеляємо ліжко по-готельному', 'Свіжа постільна білизна', 'Пил з поверхонь і дзеркал', 'Пилососимо й миємо підлогу'] },
+    { t: 'Кухня', items: ['Миємо посуд або запускаємо посудомийку', 'Мікрохвильовка й кавомашина всередині', 'Фасади шаф', 'Сміття та кухонні рушники'] },
+    { t: 'Ванна кімната', items: ['Ретельне очищення сантехніки, душу або ванни', 'Вапняний наліт і розводи', 'Дзеркала й заміна рушників', 'Поповнення мила та шампуню'] },
+    { t: 'Передпокій і додатково', items: ['Вхідна зона, вимикачі, ручки', 'Поповнення розхідників з вашого запасу', 'Миття вікон — окремо', 'Хімчистка меблів і килимів — окремо'] },
+  ],
+  moveout: [
+    { t: 'Кухня', icon: 'oven', items: ['Жир з усіх поверхонь', 'Уся кухонна техніка всередині та ззовні', 'Кухонні шафи всередині та фасади'] },
+    { t: 'Ванна й туалет', icon: 'bath', items: ['Вапняний і водний наліт', 'Кахель і міжплиткові шви', 'Сантехніка, змішувачі, душова кабіна'] },
+    { t: 'Кімнати й приховані місця', icon: 'sofa', items: ['Плінтуси, вимикачі, розетки', 'Двері, дверні ручки, радіатори', 'Вбудовані меблі та шафи всередині'] },
+    { t: 'Фінальна підготовка', icon: 'boxkey', items: ['Побутові забруднення та сліди, що піддаються очищенню', 'Підлога начисто', 'Балкон', 'Вікна зсередини', 'Вікна ззовні — окремо, за умови безпечного доступу'] },
+  ],
+  bizRegular: [
+    { t: 'Робочі зони', items: ['Підлога: пилосос і вологе прибирання', 'Столи, підвіконня, полиці', 'Скляні двері й перегородки — відбитки', 'Винесення сміття'] },
+    { t: 'Кухня й зона відпочинку', items: ['Мийка, стільниці, фасади', 'Кавомашина й техніка ззовні', 'Посуд — за домовленістю'] },
+    { t: 'Санвузли', items: ['Гігієнічне очищення сантехніки', 'Дзеркала й крани', 'Розхідники — за домовленістю'] },
+    { t: 'Загальні зони', items: ['Рецепція й вхідна зона', 'Коридори та сходи', 'Переговорні кімнати'] },
+  ],
+  bizGeneral: [
+    { t: 'Усе з регулярного', items: ['Робочі зони, кухні, санвузли', 'Загальні зони й рецепція'] },
+    { t: 'Додатково', items: ['Вікна зсередини', 'Кухонна техніка всередині', 'Двері, плінтуси, радіатори', 'Важкодоступні зони'] },
+  ],
+  bizDeep: [
+    { t: 'Усе з генерального', items: ['Робочі й загальні зони', 'Кухні, санвузли, вікна зсередини'] },
+    { t: 'Додатково', items: ['Шафи й техніка всередині', 'Жир, накип, стійкий бруд', 'Вікна ззовні — за можливості доступу', 'Світильники й вентиляційні решітки'] },
+  ],
+};
+const BIZ_PRICES = [
+  ['Прибирання', 'від 27 € / год'], ['Миття вікон', '30 € / год'], ['Миття жалюзі', '15 € / вікно'],
+  ['Хімчистка меблів і килимів', '25 € / год'], ['Догляд за рослинами', '25 € / год'], ['Щорічне генеральне прибирання', 'за оглядом'],
+];
+
+const STEPS = {
+  private: [['calc', 'Дізнайтеся ціну', 'Оберіть пакет і площу в калькуляторі — ціна зʼявиться одразу.'],
+    ['chat', 'Забронюйте прибирання', 'Залиште заявку або напишіть у WhatsApp — менеджер підтвердить дату й час.'],
+    ['boxkey', 'Команда приїде у погоджений час', 'З усім потрібним для прибирання. Бути вдома не обовʼязково — заздалегідь погодимо доступ до квартири.'],
+    ['house', 'Оплатіть після прибирання', 'Карткою, за рахунком або готівкою — і насолоджуйтеся чистою квартирою.']],
+  extras: [['calc', 'Оберіть послуги', 'Позначте потрібне в калькуляторі або у списку послуг — суму до сплати побачите одразу.'],
+    ['chat', 'Забронюйте візит', 'Залиште заявку або напишіть у WhatsApp — менеджер підтвердить дату й час.'],
+    ['boxkey', 'Команда приїде у погоджений час', 'З усім потрібним. Бути вдома не обовʼязково — заздалегідь погодимо доступ до квартири.'],
+    ['house', 'Оплатіть після виконання', 'Карткою, за рахунком або готівкою.']],
+  chem: [['search', 'Огляд і тест тканини', 'Перевіряємо тип оббивки та пробуємо засіб на непомітній ділянці.'],
+    ['spray', 'Обробка плям', 'Окремо опрацьовуємо плями та найбільш забруднені місця.'],
+    ['sofa', 'Чистка всієї поверхні', 'Очищуємо оббивку професійним засобом та обладнанням — від пилу, бруду й запахів.'],
+    ['clock', 'Висихання', 'Меблі висихають 6–12 годин: провітрюйте кімнату й не сідайте на вологу оббивку.']],
+  office: [['doc', 'Запит або ТЗ', 'Надішліть площу офісу, бажаний графік і ваші вимоги — або готове технічне завдання.'],
+    ['search', 'Огляд обʼєкта та узгодження стандарту', 'Менеджер фіксує зони, частоту, час доступу, особливості обʼєкта та чек-лист.'],
+    ['sign', 'Пропозиція та погодження', 'Готуємо комерційну пропозицію, погоджуємо перелік робіт, графік, контроль якості та фінальну вартість.'],
+    ['handshake', 'Договір і старт робіт', 'Підписуємо договір, закріплюємо команду й відповідального менеджера та запускаємо прибирання.']],
+  medical: [['doc', 'Запит', 'Надішліть площу, кількість кабінетів і ваші вимоги до гігієни.'],
+    ['search', 'Огляд обʼєкта та погодження гігієнічного плану', 'Фіксуємо зони, частоту, засоби, правила доступу та чек-листи.'],
+    ['sign', 'Пропозиція та погодження', 'Готуємо комерційну пропозицію, погоджуємо перелік робіт, графік, контроль якості та фінальну вартість.'],
+    ['handshake', 'Договір і старт робіт', 'Підписуємо договір, закріплюємо команду й відповідального менеджера та запускаємо прибирання.']],
+  renoBiz: [['roller', 'Видалення будівельного пилу', 'Сухе чищення промисловими пилососами: стелі, стіни, ніші й поверхні.'],
+    ['search', 'Сліди будівельних матеріалів', 'Видаляємо сліди затирки, скотчу, плівки, фарби, клею й цементу — якщо це можна зробити без пошкодження поверхні.'],
+    ['bucket', 'Вологе та фінальне прибирання', 'Миємо підлогу, протираємо радіатори, плінтуси, двері, світильники й сантехніку.'],
+    ['chat', 'Контроль якості та здача', 'Старший зміни перевіряє обʼєкт за погодженим чек-листом перед завершенням робіт.']],
+  business: [['doc', 'Запит або ТЗ', 'Надішліть технічне завдання або коротко опишіть обʼєкт і ваші вимоги.'],
+    ['search', 'Огляд обʼєкта за потреби', 'Якщо потрібно, менеджер приїде й оцінить обсяг робіт на місці. Невеликі обʼєкти з готовим ТЗ рахуємо одразу.'],
+    ['sign', 'Пропозиція та погодження', 'Готуємо комерційну пропозицію, погоджуємо перелік робіт, графік, контроль якості та фінальну вартість.'],
+    ['handshake', 'Договір і старт робіт', 'Підписуємо договір, закріплюємо команду й відповідального менеджера та запускаємо прибирання.']],
+  windows: [['search', 'Попереднє очищення скла', 'Прибираємо пил, наліт і стійкі забруднення безпечними для поверхні засобами та інструментами.'],
+    ['window', 'Рами, підвіконня, відливи', 'Чистимо профілі й фурнітуру губкою, миючим засобом або парогенератором.'],
+    ['spray', 'Фінальне миття скла', 'Миємо й поліруємо скло до блиску.'],
+    ['bucket', 'Сушіння без розводів', 'Видаляємо залишки води стяжкою й мікрофіброю та поліруємо скло без розводів.']],
+  moveout: [['oven', 'Знежирення кухні', 'Гарнітур зсередини й ззовні, витяжка, духовка, мікрохвильовка, холодильник.'],
+    ['bath', 'Ретельне очищення ванної', 'Вапняний наліт, кахель і шви, ванна, душ, змішувачі та унітаз.'],
+    ['spray', 'Пил з усіх поверхонь', 'Двері, плінтуси, розетки, вимикачі, радіатори, вбудовані меблі.'],
+    ['search', 'Контроль і здача', 'Старший зміни перевіряє прибирання за чек-листом перед передачею квартири. Після завершення надсилаємо фото.']],
+  airbnb: [['calc', 'Домовляємося', 'Фіксуємо ціну за розміром квартири й підлаштовуємо графік під ваші заїзди.'],
+    ['bucket', 'Прибирання', 'Клінер приходить вчасно, з інвентарем і професійними засобами.'],
+    ['bed', 'Білизна й перевірка', 'Міняємо білизну й рушники, перевіряємо квартиру й пишемо вам про пошкодження.'],
+    ['chat', 'Готово до заїзду', 'Розкладаємо вітальні набори, зачиняємо двері й надсилаємо вам фотозвіт.']],
+  reno: [['roller', 'Видалення будівельного пилу', 'Сухе чищення промисловими пилососами: стелі, стіни, ніші й поверхні.'],
+    ['search', 'Сліди будівельних матеріалів', 'Видаляємо сліди затирки, скотчу, плівки, фарби, клею й цементу — якщо це можна зробити без пошкодження поверхні.'],
+    ['bucket', 'Вологе прибирання', 'Двічі миємо підлогу, протираємо радіатори, плінтуси, двері, світильники й сантехніку.'],
+    ['chat', 'Фінальна перевірка', 'Старший зміни перевіряє результат за чек-листом перед завершенням робіт.']],
+};
+
+const REVIEWS = [
+  { name: 'Nur Timurlenk', when: '6 місяців тому', ava: 'https://lh3.googleusercontent.com/a-/ALV-UjUj-AsqBlk6Th6bEUwPPadLjVri33KFSXNsdVbLOK--51lhQa3s=s128-c0x00000000-cc-rp-mo-ba3', text: 'Чудовий сервіс з доброзичливими та справді працьовитими людьми - це був чудовий вибір для весняного прибирання, я однозначно рекомендую!' },
+  { name: 'vanoosheh bitajian', when: '3 місяці тому', ava: 'https://lh3.googleusercontent.com/a/ACg8ocIshh2GNlBBWQGfd6fqwXTNnze_xLP1BPuZNLCSOFkHrNh5vGw=s128-c0x00000000-cc-rp-mo', text: 'Я надзвичайно задоволений послугою. Вся команда не поспішала та працювала з великою обережністю. Кожна деталь була ретельно та професійно очищена, а результат перевершив мої очікування. Особливо хочу підкреслити доброзичливість, надійність та професіоналізм персоналу. Видно, що вони працюють із захопленням та прагнуть високої якості. Я можу щиро рекомендувати цю компанію та з радістю знову скористаюся їхніми послугами в майбутньому. Дякую за чудову роботу.' },
+  { name: 'Elma Kozlica', when: '4 місяці тому', ava: 'https://lh3.googleusercontent.com/a/ACg8ocLM-7VLcTB-OGX3zlfNYrHrE3v9Z7qSJ6oqLAVf4ZLN4ohpDQ=s128-c0x00000000-cc-rp-mo', text: 'Вони пропонують справді чудовий сервіс, і я завжди дуже задоволений :-). Я дуже рекомендую цю клінінгову компанію 👍🏻' },
+  { name: 'Mariya', when: '5 місяців тому', ava: 'https://lh3.googleusercontent.com/a/ACg8ocJ34isC7gVKmZOuijwIWbIsM8idyBvKKNcHMxXUryM37OayWg=s128-c0x00000000-cc-rp-mo', text: 'Завжди професійно та з увагою до деталей !' },
+];
+const LOGOS = [
+  { alt: 'Hilton Garden Inn Wiener Neustadt', src: 'https://res.cloudinary.com/dbiy7qyfe/image/upload/w_460,f_auto,q_auto/v1780686332/IMG_3266_0810e0a150.jpg' },
+  { alt: 'Penthouse Sports', src: 'https://res.cloudinary.com/dbiy7qyfe/image/upload/w_460,f_auto,q_auto/v1780686367/image_4_47105c8377.jpg' },
+  { alt: 'Mulackal', src: 'https://res.cloudinary.com/dbiy7qyfe/image/upload/w_460,f_auto,q_auto/v1780686429/image_3_c6bdbbc744.png' },
+  { alt: 'dwell·bell', src: 'https://res.cloudinary.com/dbiy7qyfe/image/upload/w_460,f_auto,q_auto/v1780686406/image_1_697e55346a.png' },
+  { alt: 'X-Treme Pilates', src: 'https://res.cloudinary.com/dbiy7qyfe/image/upload/w_460,f_auto,q_auto/v1780686448/IMG_1985_2d6882b280.jpg' },
+];
+// Object icons from shineguards.com, inlined with a heavier stroke so they stay legible at 28–44 px
+const OBJ_SVG = {
+  heroicons_building_storefront_68ef12c0f1: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M29.8113 46.375V29.8125C29.8113 29.3732 29.9858 28.952 30.2964 28.6414C30.607 28.3307 31.0283 28.1562 31.4675 28.1562H38.0925C38.5318 28.1562 38.9531 28.3307 39.2637 28.6414C39.5743 28.952 39.7488 29.3732 39.7488 29.8125V46.375M29.8113 46.375H5.21043M29.8113 46.375H39.7488M39.7488 46.375H47.7871M44.7175 46.375V20.6457M44.7175 20.6457C43.4541 21.3749 41.9853 21.6667 40.539 21.4759C39.0928 21.285 37.7499 20.6221 36.7189 19.5901C36.6218 19.493 36.5275 19.3928 36.4363 19.2898C35.2217 20.6634 33.4462 21.5312 31.4675 21.5312C30.5275 21.5312 29.5983 21.3311 28.7417 20.9442C27.885 20.5574 27.1204 19.9927 26.4988 19.2876C25.2842 20.6634 23.5087 21.5312 21.53 21.5312C20.59 21.5312 19.6608 21.3311 18.8042 20.9442C17.9475 20.5574 17.1829 19.9927 16.5613 19.2876C15.5499 20.4352 14.1726 21.1975 12.6631 21.445C11.1536 21.6926 9.60495 21.4102 8.28001 20.6457M44.7175 20.6457C45.5977 20.1376 46.3493 19.4338 46.9139 18.5887C47.4786 17.7436 47.8412 16.7799 47.9738 15.7722C48.1064 14.7646 48.0053 13.7399 47.6785 12.7775C47.3516 11.8152 46.8077 10.9409 46.0889 10.2224L43.461 7.59667C42.8404 6.97527 41.9984 6.62577 41.1201 6.625H11.8752C10.9973 6.62519 10.1553 6.97388 9.53435 7.59446L6.90864 10.2224C6.19145 10.9417 5.64904 11.8161 5.32321 12.7782C4.99738 13.7403 4.89684 14.7644 5.02934 15.7715C5.16184 16.7786 5.52384 17.7418 6.08744 18.5869C6.65104 19.432 7.40117 20.1364 8.28001 20.6457M8.28001 46.375V20.6457M14.905 39.75H23.1863C23.6255 39.75 24.0468 39.5755 24.3574 39.2649C24.668 38.9543 24.8425 38.533 24.8425 38.0937V29.8125C24.8425 29.3732 24.668 28.952 24.3574 28.6414C24.0468 28.3307 23.6255 28.1562 23.1863 28.1562H14.905C14.4657 28.1562 14.0445 28.3307 13.7339 28.6414C13.4233 28.952 13.2488 29.3732 13.2488 29.8125V38.0937C13.2488 39.008 13.9908 39.75 14.905 39.75Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_1_2_6e78263219: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M26.595 6C26.595 5.6134 26.2814 5.2998 25.8948 5.2998H14.4856C14.099 5.2998 13.7854 5.6134 13.7854 6V10.25H7.54541C7.15881 10.25 6.84521 10.5636 6.84521 10.9502V47.2998H3.00098C2.61438 47.2998 2.30078 47.6134 2.30078 48C2.30078 48.3866 2.61438 48.7002 3.00098 48.7002H7.54541H32.8355H50.001C50.3876 48.7002 50.7012 48.3866 50.7012 48C50.7012 47.6134 50.3876 47.2998 50.001 47.2998H46.1565V20.2109C46.1565 19.8243 45.8429 19.5107 45.4563 19.5107H33.5356V10.9502C33.5356 10.5636 33.222 10.25 32.8355 10.25H26.595V6ZM32.135 47.2998V43.3662V38.7393V34.1055V29.4716V24.8447V20.2109L32.1353 20.1922V11.6504H25.8994L25.8948 11.6504H14.4856L14.4809 11.6504H8.24561V47.2998H16.4297V43.3662C16.4297 42.9796 16.7433 42.666 17.1299 42.666H23.2441C23.6307 42.666 23.9443 42.9796 23.9443 43.3662V47.2998H32.135ZM25.1946 10.25V6.7002H15.1858V10.25H25.1946ZM33.5356 20.9111V24.1445H39.8303C40.2169 24.1445 40.5305 24.4581 40.5305 24.8447C40.5305 25.2313 40.2169 25.5449 39.8303 25.5449H33.5356V28.7714H39.8303C40.2169 28.7714 40.5305 29.085 40.5305 29.4716C40.5305 29.8582 40.2169 30.1718 39.8303 30.1718H33.5356V33.4053H39.8303C40.2169 33.4053 40.5305 33.7189 40.5305 34.1055C40.5305 34.4921 40.2169 34.8056 39.8303 34.8056H33.5356V38.0391H39.8303C40.2169 38.0391 40.5305 38.3527 40.5305 38.7393C40.5305 39.1259 40.2169 39.4395 39.8303 39.4395H33.5356V42.666H39.8303C40.2169 42.666 40.5305 42.9796 40.5305 43.3662C40.5305 43.7528 40.2169 44.0664 39.8303 44.0664H33.5356V47.2998H44.7561V20.9111H33.5356ZM26.7073 14.8771C27.0939 14.8771 27.4075 15.1907 27.4075 15.5773C27.4075 15.9639 27.0939 16.2775 26.7073 16.2775H13.6663C13.2797 16.2775 12.9661 15.9639 12.9661 15.5773C12.9661 15.1907 13.2797 14.8771 13.6663 14.8771H26.7073ZM27.4075 20.2109C27.4075 19.8243 27.0939 19.5107 26.7073 19.5107H13.6663C13.2797 19.5107 12.9661 19.8243 12.9661 20.2109C12.9661 20.5975 13.2797 20.9111 13.6663 20.9111H26.7073C27.0939 20.9111 27.4075 20.5975 27.4075 20.2109ZM26.7073 24.1445C27.0939 24.1445 27.4075 24.4581 27.4075 24.8447C27.4075 25.2313 27.0939 25.5449 26.7073 25.5449H13.6663C13.2797 25.5449 12.9661 25.2313 12.9661 24.8447C12.9661 24.4581 13.2797 24.1445 13.6663 24.1445H26.7073ZM27.4075 29.4716C27.4075 29.085 27.0939 28.7714 26.7073 28.7714H13.6663C13.2797 28.7714 12.9661 29.085 12.9661 29.4716C12.9661 29.8582 13.2797 30.1718 13.6663 30.1718H26.7073C27.0939 30.1718 27.4075 29.8582 27.4075 29.4716ZM26.7073 33.4053C27.0939 33.4053 27.4075 33.7189 27.4075 34.1055C27.4075 34.4921 27.0939 34.8056 26.7073 34.8056H13.6663C13.2797 34.8056 12.9661 34.4921 12.9661 34.1055C12.9661 33.7189 13.2797 33.4053 13.6663 33.4053H26.7073ZM27.4075 38.7393C27.4075 38.3527 27.0939 38.0391 26.7073 38.0391H13.6663C13.2797 38.0391 12.9661 38.3527 12.9661 38.7393C12.9661 39.1259 13.2797 39.4395 13.6663 39.4395H26.7073C27.0939 39.4395 27.4075 39.1259 27.4075 38.7393ZM17.8301 47.2998H22.5439V44.0664H17.8301V47.2998Z" fill="currentColor" stroke="currentColor" stroke-width=".7" stroke-linejoin="round"/></svg>',
+  carbon_hotel_d221e943a3: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M6.625 15.4582V39.7498C6.625 43.9148 6.625 45.995 7.91908 47.2891C9.21317 48.5832 11.2934 48.5832 15.4583 48.5832H37.5417C41.7066 48.5832 43.7868 48.5832 45.0809 47.2891C46.375 45.995 46.375 43.9148 46.375 39.7498V15.4582M37.5417 15.4582C37.5417 12.5297 36.3784 9.72125 34.3076 7.65053C32.2369 5.57982 29.4284 4.4165 26.5 4.4165C23.5716 4.4165 20.7631 5.57982 18.6924 7.65053C16.6216 9.72125 15.4583 12.5297 15.4583 15.4582" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M30.918 48.5833V39.75C30.918 38.5786 30.4526 37.4552 29.6244 36.6269C28.7961 35.7987 27.6727 35.3333 26.5013 35.3333C25.3299 35.3333 24.2065 35.7987 23.3782 36.6269C22.55 37.4552 22.0846 38.5786 22.0846 39.75V48.5833M19.8763 6.625H9.87697C9.19239 6.625 8.49676 6.80608 7.94689 7.35154C6.3083 8.97467 5.36314 11.6777 4.41797 15.4583H15.4596M33.1263 6.625H43.1256C43.8102 6.625 44.5058 6.80608 45.0557 7.35154C46.6943 8.97467 47.6395 11.6777 48.5846 15.4583H37.543M13.2513 24.2917H14.3555M13.2513 32.0208H14.3555M38.6471 24.2917H39.7513M38.6471 32.0208H39.7513M23.1888 17.6667V20.9792M23.1888 20.9792V24.2917M23.1888 20.9792H29.8138M29.8138 17.6667V20.9792M29.8138 20.9792V24.2917" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_fef08e7c5c: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M26.2923 7.11034H33.471V10.7164H26.2923M5.4375 26.7858L26.29 13.9714L47.1034 26.7858M26.2705 6V13.3236M46.4959 47.2667H6.04618M13.8956 27.5774C13.8956 29.7567 12.0409 31.5228 9.75344 31.5228C7.46603 31.5228 5.61124 29.7567 5.61124 27.5774M22.1594 27.5774C22.1594 29.7567 20.3034 31.5228 18.0171 31.5228C15.7309 31.5228 13.8749 29.7567 13.8749 27.5774M30.423 27.5774C30.423 29.7567 28.5671 31.5228 26.2808 31.5228C23.9946 31.5228 22.1386 29.7567 22.1386 27.5774M38.6879 27.5774C38.6879 29.7567 36.8319 31.5228 34.5457 31.5228C32.2594 31.5228 30.4035 29.7567 30.4035 27.5774M46.9515 27.5774C46.9515 29.7567 45.0956 31.5228 42.8093 31.5228C40.5231 31.5228 38.6671 29.7567 38.6671 27.5774M5.69408 26.9227H46.3739M13.9428 26.7858L26.282 13.9714L38.5935 26.7858M22.4275 26.7858L26.2693 13.9714L30.1089 26.7858M5.6849 47.2667C7.78246 43.5997 9.68327 36.7719 9.16319 31.6184M46.856 47.2667C44.7596 43.5997 42.8588 36.7719 43.3777 31.6184M38.9686 42.1395L36.5846 47.2667C32.3641 47.2667 27.5879 38.9627 26.6893 32.5158C28.3704 36.1103 33.8116 41.4273 38.9675 42.1453L38.9686 42.1395ZM13.5712 42.1395L15.9553 47.2609C20.1768 47.2609 24.953 38.9569 25.8505 32.5101C24.1695 36.1046 18.7282 41.4216 13.5735 42.1395H13.5712Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_3_2_fb20820c31: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M5.06133 45H47.9338M9.56847 45V28.6591M20.1404 45V28.6591M43.4266 45V28.6591M13.8904 21.8108L16.0171 8.57286M22.2179 21.8108C22.455 17.3986 22.6913 12.9859 22.9268 8.57286M30.5454 21.8108C30.3099 17.3986 30.0736 12.9859 29.8365 8.57286M38.8729 21.8108L36.7475 8.57286M16.6229 37.0296V33.9441M9.87263 8H43.1311L47.9252 19.0422C47.975 19.3177 48 19.5972 48 19.8773C48 22.4869 45.8562 24.5994 43.2169 24.5994C42.3715 24.605 41.5397 24.3847 40.8052 23.9606C40.0707 23.5364 39.4596 22.9235 39.0336 22.1836C38.6054 22.9209 37.9947 23.5321 37.2618 23.9568C36.5289 24.3814 35.6994 24.6048 34.8551 24.6048C34.0109 24.6048 33.1812 24.3814 32.4484 23.9568C31.7155 23.5321 31.1048 22.9209 30.6766 22.1836C30.2483 22.9209 29.6375 23.532 28.9045 23.9567C28.1715 24.3813 27.3419 24.6046 26.4976 24.6046C25.6533 24.6046 24.8235 24.3813 24.0906 23.9567C23.3576 23.532 22.7468 22.9209 22.3185 22.1836C21.8903 22.9209 21.2796 23.5321 20.5467 23.9568C19.8139 24.3814 18.9843 24.6048 18.14 24.6048C17.2958 24.6048 16.4662 24.3814 15.7333 23.9568C15.0004 23.5321 14.3897 22.9209 13.9615 22.1836C13.5366 22.9237 12.9265 23.5371 12.1929 23.9621C11.4593 24.3871 10.6281 24.6086 9.7831 24.6043C7.14013 24.6043 5 22.4918 5 19.8822C4.99961 19.6022 5.02425 19.3227 5.0736 19.0472L9.87263 8Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_2_6a11ece0ad: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M27 8.22457V14.2449M23.9652 11.2348H30.036M33.3934 14.1516H38.7373V48H15.259V14.1516H20.6066M14.8375 48H5V22.7848H15.0122M39.1613 48H49V22.7848H38.9817M20.6457 48V40.6242H33.3519V48M26.9976 41.3134V47.3338M27 5C28.2437 5 29.4595 5.36567 30.4936 6.05075C31.5277 6.73583 32.3337 7.70956 32.8097 8.84881C33.2856 9.98807 33.4101 11.2417 33.1675 12.4511C32.9249 13.6605 32.326 14.7714 31.4465 15.6434C30.5671 16.5153 29.4466 17.1091 28.2268 17.3497C27.007 17.5903 25.7426 17.4668 24.5936 16.9949C23.4445 16.523 22.4624 15.7239 21.7714 14.6986C21.0805 13.6733 20.7117 12.4679 20.7117 11.2348C20.7117 9.5812 21.3742 7.99537 22.5535 6.82613C23.7328 5.65689 25.3322 5 27 5ZM8.38668 39.6188H11.6231V42.4218H8.38791V39.6139L8.38668 39.6188ZM8.38668 33.6432H11.6231V36.4511H8.38791V33.6432H8.38668ZM8.38668 27.6677H11.6219V30.4768H8.38791V27.6677H8.38668ZM42.3732 39.6188H45.6097V42.4218H42.3745V39.6139L42.3732 39.6188ZM42.3732 33.6432H45.6097V36.4511H42.3745V33.6432H42.3732ZM42.3732 27.6677H45.6097V30.4768H42.3745V27.6677H42.3732ZM20.7068 21.5008H33.2908V24.3087H20.7068V21.5008ZM20.7068 27.6677H33.2908V30.4768H20.7068V27.6677ZM20.7068 33.6432H33.2908V36.4523H20.7068V33.6432Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_7_9b89221a83: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M12.7928 44.9973V10.9395C12.9434 9.84427 13.831 9 14.9216 9H37.0811C38.157 9 39.0526 9.84427 39.2086 10.9342V44.9973M11.4964 14.432H6.92413C5.74206 14.432 4.77246 15.5206 4.77246 16.848L5.99351 44.9638M40.505 14.4334H45.0773C46.2593 14.4334 47.2289 15.5219 47.2289 16.8494L46.0078 44.9651M16.8379 14.436H35.1621M16.8379 19.4667H35.1621M16.8379 24.4974H35.1621M16.8379 29.5281H35.1621M16.8379 34.5588H35.1621M16.8379 39.5895H35.1621M3 45H49" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cbi_kitchen_alt_5dda9538f8: '<svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><path d="M21.0351 19.426H23.6V18.1426H21.543L19.8233 10.9193C19.7902 10.7784 19.7104 10.6528 19.5969 10.5629C19.4834 10.4731 19.3429 10.4242 19.1981 10.4243H16.4408C16.296 10.4242 16.1555 10.4731 16.042 10.5629C15.9285 10.6528 15.8487 10.7784 15.8156 10.9193L14.0941 18.1426H12.0298V19.426H21.0351ZM16.9486 11.7058H18.6885L20.2211 18.139H15.416L16.9486 11.7058ZM19.7481 26.5008H15.889C15.8046 26.5006 15.7209 26.517 15.6429 26.5491C15.5648 26.5813 15.4938 26.6285 15.4341 26.6881C15.3743 26.7477 15.3269 26.8185 15.2945 26.8965C15.2621 26.9745 15.2455 27.0581 15.2455 27.1425V30.36C15.2452 30.4446 15.2617 30.5283 15.294 30.6065C15.3262 30.6847 15.3736 30.7557 15.4334 30.8155C15.4932 30.8753 15.5642 30.9227 15.6424 30.955C15.7206 30.9872 15.8044 31.0037 15.889 31.0035H19.7481C19.8327 31.0037 19.9165 30.9872 19.9947 30.955C20.0729 30.9227 20.1439 30.8753 20.2037 30.8155C20.2635 30.7557 20.3109 30.6847 20.3431 30.6065C20.3754 30.5283 20.3919 30.4446 20.3916 30.36V27.1425C20.3916 27.0581 20.375 26.9745 20.3426 26.8965C20.3103 26.8185 20.2628 26.7477 20.2031 26.6881C20.1433 26.6285 20.0723 26.5813 19.9943 26.5491C19.9162 26.517 19.8326 26.5006 19.7481 26.5008ZM19.1065 29.7165H16.5325V27.786H19.0991L19.1065 29.7165ZM11.3863 26.5008H12.6733V29.7165H11.3863V26.5008ZM31.9691 21.9963H33.2561V25.212H31.9691V21.9963ZM31.9691 16.2103H33.2561V19.426H31.9691V16.2103ZM39.6893 11.7058H30.684C30.5996 11.7058 30.516 11.7225 30.438 11.7548C30.36 11.7872 30.2892 11.8346 30.2296 11.8944C30.17 11.9542 30.1228 12.0251 30.0906 12.1032C30.0585 12.1813 30.0421 12.2649 30.0423 12.3493V24.5703H4.30964C4.22522 24.5703 4.14163 24.587 4.06366 24.6193C3.98569 24.6517 3.91487 24.6991 3.85526 24.7589C3.79565 24.8187 3.74843 24.8896 3.71629 24.9677C3.68415 25.0458 3.66773 25.1294 3.66797 25.2138V32.9321C3.66773 33.0166 3.68415 33.1002 3.71629 33.1783C3.74843 33.2563 3.79565 33.3273 3.85526 33.3871C3.91487 33.4468 3.98569 33.4943 4.06366 33.5266C4.14163 33.559 4.22522 33.5756 4.30964 33.5756H39.6911C39.7757 33.5759 39.8595 33.5594 39.9377 33.5272C40.0159 33.4949 40.0869 33.4475 40.1467 33.3877C40.2065 33.3279 40.2539 33.2569 40.2861 33.1787C40.3184 33.1005 40.3349 33.0167 40.3346 32.9321V12.3493C40.3349 12.2646 40.3183 12.1807 40.286 12.1023C40.2536 12.024 40.2061 11.9529 40.1461 11.8931C40.0861 11.8333 40.0148 11.7859 39.9364 11.7538C39.858 11.7216 39.774 11.7053 39.6893 11.7058ZM30.0405 28.4295H22.3203V25.8628H30.0405V28.4295ZM4.95314 25.8628H13.3168V32.296H4.95314V25.8628ZM14.602 25.8628H21.0351V28.4295H21.0131V29.7128H21.0351V32.2795H14.602V25.8628ZM22.3203 29.7128H30.0405V32.2795H22.3203V29.7128ZM39.0458 32.2795H31.3256V21.3565H39.0458V32.2795ZM31.3256 20.0695V12.9928H39.0458V20.0695H31.3256Z" fill="currentColor" stroke="currentColor" stroke-width=".7" stroke-linejoin="round"/></svg>',
+  hugeicons_cafe_9a27ab6b47: '<svg viewBox="0 0 44 44" fill="none" aria-hidden="true"><path d="M11 14.2853C11.6976 14.5898 12.46 14.7157 13.2185 14.6518C13.9769 14.5878 14.7075 14.336 15.3443 13.919C15.981 13.502 16.5039 12.933 16.8657 12.2633C17.2275 11.5937 17.4169 10.8445 17.4167 10.0833C17.4167 11.2989 17.8996 12.4647 18.7591 13.3242C19.6186 14.1838 20.7844 14.6667 22 14.6667C23.2156 14.6667 24.3814 14.1838 25.2409 13.3242C26.1004 12.4647 26.5833 11.2989 26.5833 10.0833C26.5831 10.8445 26.7725 11.5937 27.1343 12.2633C27.4961 12.933 28.019 13.502 28.6557 13.919C29.2925 14.336 30.0231 14.5878 30.7815 14.6518C31.54 14.7157 32.3024 14.5898 33 14.2853C33.8176 13.9285 34.5132 13.3409 35.0017 12.5945C35.4902 11.8481 35.7503 10.9754 35.75 10.0833L33 5.5H11L8.25 10.0833C8.24975 10.9754 8.5098 11.8481 8.99828 12.5945C9.48677 13.3409 10.1824 13.9285 11 14.2853ZM33 14.2853V20.1667M11 14.2853V20.1667M5.5 22V31.1667M5.5 31.1667H9.16667C11.759 31.1667 13.0552 31.1667 13.86 31.9733C14.6667 32.7763 14.6667 34.0725 14.6667 36.6667V38.5M5.5 31.1667V38.5M38.5 22V31.1667M38.5 31.1667H34.8333C32.241 31.1667 30.9448 31.1667 30.14 31.9733C29.3333 32.7763 29.3333 34.0725 29.3333 36.6667V38.5M38.5 31.1667V38.5M12.8333 25.6667H22M22 25.6667H31.1667M22 25.6667V38.5M22 38.5H20.1667M22 38.5H23.8333" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_10_b23cf55ae6: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M5.06133 45H47.9338M9.56847 45V28.6591M20.1404 45V28.6591M43.4266 45V28.6591M13.8904 21.8108L16.0171 8.57286M22.2179 21.8108C22.455 17.3986 22.6913 12.9859 22.9268 8.57286M30.5454 21.8108C30.3099 17.3986 30.0736 12.9859 29.8365 8.57286M38.8729 21.8108L36.7475 8.57286M16.6229 37.0296V33.9441M28.8701 39.2266L38.5381 29.5451M32.2833 41.8946L38.8226 35.3446M9.87263 8H43.1311L47.9252 19.0422C47.975 19.3177 48 19.5972 48 19.8773C48 22.4869 45.8562 24.5994 43.2169 24.5994C42.3715 24.605 41.5397 24.3847 40.8052 23.9606C40.0707 23.5364 39.4596 22.9235 39.0336 22.1836C38.6054 22.9209 37.9947 23.5321 37.2618 23.9568C36.5289 24.3814 35.6994 24.6048 34.8551 24.6048C34.0109 24.6048 33.1812 24.3814 32.4484 23.9568C31.7155 23.5321 31.1048 22.9209 30.6766 22.1836C30.2483 22.9209 29.6375 23.532 28.9045 23.9567C28.1715 24.3813 27.3419 24.6046 26.4976 24.6046C25.6533 24.6046 24.8235 24.3813 24.0906 23.9567C23.3576 23.532 22.7468 22.9209 22.3185 22.1836C21.8903 22.9209 21.2796 23.5321 20.5467 23.9568C19.8139 24.3814 18.9843 24.6048 18.14 24.6048C17.2958 24.6048 16.4662 24.3814 15.7333 23.9568C15.0004 23.5321 14.3897 22.9209 13.9615 22.1836C13.5365 22.9237 12.9265 23.5371 12.1929 23.9621C11.4593 24.3871 10.6281 24.6086 9.7831 24.6043C7.14013 24.6043 5 22.4918 5 19.8822C4.99961 19.6022 5.02425 19.3227 5.0736 19.0472L9.87263 8Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_2_2_c0582bea8c: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M7 29.5554H10.2039L13.1751 39.3183H22.8241M23.1182 39.0253L24.8175 33.8905H11.8493M12.2334 25.7028C12.2144 21.1678 12.1985 18.0863 12.1985 13.5587C12.1985 9.93659 19.5429 7 28.5992 7C37.6556 7 45 9.93553 45 13.5587C45 24.0197 44.9122 34.5199 44.9122 44.9958H26.374M12.1953 22.1167C12.1953 20.0147 19.5397 18.3084 28.596 18.3084C37.6524 18.3084 44.9968 20.0115 44.9968 22.1167M14.903 29.1884C17.8382 28.7113 22.8738 28.395 28.5929 28.395M28.5929 28.395C37.6525 28.395 44.9936 29.1863 44.9936 30.1616M28.5929 28.395V44.999M36.5002 18.8902V44.999M41.9632 29.2973V44.999M17.1346 16.2847V11.9349L19.5376 14.7382L22.132 10.6781V15.5114M35.3098 15.6109L31.8825 15.321V10.1619M24.4896 15.4765L26.1825 10.5173C26.3169 10.1217 27.284 10.1132 27.43 10.5036L29.305 15.5051M25.2842 14.2283L28.2374 14.2103M41.0406 16.6687L37.6122 15.7981V11.2198M20.6443 19.2869C20.6443 19.2869 20.6443 24.9386 20.6443 28.56M14.7305 41.8265C15.0449 41.8244 15.3528 41.9157 15.6152 42.0887C15.8776 42.2618 16.0827 42.5089 16.2044 42.7987C16.3262 43.0884 16.3591 43.4078 16.2991 43.7163C16.2391 44.0248 16.0887 44.3085 15.8672 44.5315C15.6456 44.7545 15.3628 44.9066 15.0547 44.9687C14.7465 45.0308 14.4269 45 14.1362 44.8802C13.8456 44.7605 13.5971 44.5571 13.4222 44.2959C13.2473 44.0347 13.154 43.7275 13.1539 43.4133C13.1533 43.2056 13.1935 42.9998 13.2724 42.8077C13.3512 42.6155 13.4672 42.4408 13.6136 42.2934C13.76 42.1461 13.9339 42.029 14.1256 41.9489C14.3172 41.8688 14.5228 41.8272 14.7305 41.8265ZM20.7967 41.8265C21.1111 41.8244 21.419 41.9157 21.6814 42.0887C21.9438 42.2618 22.1488 42.5089 22.2706 42.7987C22.3923 43.0884 22.4253 43.4078 22.3653 43.7163C22.3052 44.0248 22.1549 44.3085 21.9333 44.5315C21.7118 44.7545 21.429 44.9066 21.1208 44.9687C20.8127 45.0308 20.493 45 20.2024 44.8802C19.9118 44.7605 19.6632 44.5571 19.4884 44.2959C19.3135 44.0347 19.2201 43.7275 19.2201 43.4133C19.2194 43.2056 19.2597 42.9998 19.3385 42.8077C19.4174 42.6155 19.5333 42.4408 19.6797 42.2934C19.8261 42.1461 20.0001 42.029 20.1917 41.9489C20.3834 41.8688 20.589 41.8272 20.7967 41.8265Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icons_budivli_8_f98373696e: '<svg viewBox="0 0 53 53" fill="none" aria-hidden="true"><path d="M7 17.749L26.5 9.14111L46 17.749V47.1438H39.5706V22.2786H13.4294V47.1438H7V17.749Z" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 35H29V32H33V33H36V41H33V42H29V39H24V42H20V41H17V33H20V32H24V35ZM21.4004 40.5996H22.5996V33.4004H21.4004V40.5996ZM30.4004 40.5996H31.5996V33.4004H30.4004V40.5996ZM18.4004 39.5996H19.5996V34.4004H18.4004V39.5996ZM33.4004 39.5996H34.5996V34.4004H33.4004V39.5996ZM24.4004 37.5996H28.5996V36.4004H24.4004V37.5996Z" fill="currentColor" stroke="currentColor" stroke-width=".7" stroke-linejoin="round"/></svg>',
+};
+// Business objects — each has its own page, like on shineguards.com: /{city}/ua/locations/{slug}-in-{city}
+// calc = calculator preset on that page; incl = what we do there
+const OBJECTS = {
+  hotels: { slug: 'goteli-apartamenti-ta-airbnb', name: 'Готелі, апартаменти та Airbnb', h1: 'Прибирання готелів, апартаментів та Airbnb', icon: 'carbon_hotel_d221e943a3', tag: 'між гостями та під час проживання', solo: true, calc: { obj: 'apartments' },
+    lead: 'Беремо на себе прибирання номерів та апартаментів після виїзду гостей, між заїздами та під час проживання. Працюємо за чек-листом, замінюємо білизну та рушники, контролюємо й поповнюємо витратні матеріали, робимо фото до/після та повідомляємо про поломки чи пошкодження.',
+    trust: 'Прибираємо щодня — під ваш календар заїздів',
+    // the main message of the page: the client deals with guests and bookings, we take the cleanliness and the readiness
+    keysTitle: 'Ви займаєтеся гостями — ми відповідаємо за чистоту й готовність обʼєкта',
+    keys: [
+      ['bed', 'Прибирання між гостями', 'Повна підготовка апартаменту або номера до наступного заїзду.'],
+      ['bucket', 'Проміжне прибирання', 'Підтримання чистоти під час тривалого проживання гостей.'],
+      ['mattress', 'Заміна постільної білизни та рушників', 'Замінюємо підготовлені комплекти під час прибирання.'],
+      ['receipt', 'Контроль і поповнення витратних матеріалів', 'Перевіряємо погоджені позиції та поповнюємо їх за потреби.'],
+      ['search', 'Фото-контроль', 'Фото до та після прибирання для контролю якості й стану обʼєкта.'],
+      ['chat', 'Контроль стану обʼєкта', 'Повідомляємо про поломки, пошкодження, відсутні речі або інші проблеми, які помічає команда.'],
+    ],
+    inclTitle: 'Що входить у прибирання', inclSub: 'Від виїзду гостя до готовності обʼєкта для наступного.',
+    incl: [
+      { t: 'Після виїзду / перед заїздом', icon: 'bed', items: ['Прибирання за чек-листом', 'Кухня, санвузол, кімнати', 'Заміна постільної білизни та рушників', 'Підготовка до наступного гостя'] },
+      { t: 'Під час проживання', icon: 'bucket', items: ['Проміжне прибирання', 'Основні поверхні та санвузол', 'Заміна білизни й рушників за потреби', 'Поповнення витратних матеріалів'] },
+      { t: 'Контроль та сервіс', icon: 'search', items: ['Фото до та після прибирання', 'Контроль витратних матеріалів', 'Повідомлення про поломки й пошкодження', 'Контроль стану обʼєкта'] },
+    ],
+    advSub: 'Прибирання між гостями й під час проживання, заміна білизни, витратні матеріали, фото-контроль і термінові ситуації — в одних руках.',
+    adv: [
+      ['clock', 'Термінові прибирання', 'Маємо резервну команду для непередбачених ситуацій. У багатьох випадках можемо організувати прибирання навіть за 1–2 години до заїзду — точний час підтверджує менеджер.'],
+      ['bed', 'Досвід з апартаментами та короткостроковою орендою', 'Розуміємо строки між check-out і check-in, важливість стабільної якості, швидкої комунікації та готовності обʼєкта до наступного гостя.'],
+      ['people', 'Закріплена команда', 'На обʼєкти виходять клінери, які знають ваші апартаменти й чек-лист. У разі відсутності працівника організовуємо заміну.'],
+      ['shield', 'Застрахована відповідальність', 'Відповідальність Shine Guards і порядок роботи на обʼєкті закріплюємо договором. Можливі збитки покриваються відповідно до умов страхування.'],
+      ['headset', 'Персональний менеджер', 'Контроль якості за чек-листами й один контакт для всіх питань щодо графіка та обʼєктів.'],
+      ['sign', 'Договір і пропозиція за 24 години', 'Розрахунок, графік і проєкт договору — протягом доби після запиту.'],
+    ],
+    faqTitle: 'Питання про прибирання апартаментів і готелів',
+    faq: [
+      ['Як формується ціна?', '{aptprice} Ціна залежить від площі апартаменту й типу прибирання: після короткострокової оренди, після довгострокової або проміжне. Для регулярних обсягів — індивідуальна ставка та знижка до 10%. Готелі розраховуємо індивідуально.'],
+      ['Чи працюєте за договором?', 'Так. Графік, чек-лист, порядок доступу до обʼєктів і відповідальність сторін фіксуємо в договорі. Надаємо інвойси та документи для бухгалтерії.'],
+      ['Чи встигнете між check-out і check-in?', 'Так. Плануємо прибирання під ваш календар бронювань, зокрема під заїзд того ж дня.'],
+      ['Чи робите проміжні прибирання під час проживання гостей?', 'Так. Підтримуємо чистоту під час тривалого проживання: основні поверхні, санвузол, за потреби — заміна білизни й рушників і поповнення витратних матеріалів.'],
+      ['Чи можна замовити термінове прибирання?', 'Маємо резервну команду для непередбачених ситуацій. У багатьох випадках можемо організувати прибирання навіть за 1–2 години до заїзду — точний час підтверджує менеджер.'],
+      ['Що буде, якщо клінер захворів?', 'Організовуємо заміну — прибирання відбудеться за графіком.'],
+      ['Як відбувається заміна білизни?', 'Під час прибирання замінюємо постільну білизну й рушники на підготовлені комплекти та застеляємо ліжка.'],
+      ['Хто відповідає за чисту білизну?', 'Чисті комплекти надаєте ви — ми замінюємо їх під час прибирання. За запитом можемо організувати прання білизни через партнерів.'],
+      ['Як ви працюєте з витратними матеріалами?', 'Перевіряємо погоджені позиції та поповнюємо їх із вашого запасу. Якщо щось закінчується — повідомляємо.'],
+      ['Чиї засоби та інвентар для прибирання?', 'Зазвичай працюємо засобами та інвентарем, які є в апартаменті. Можемо приходити зі своїми — це окрема опція в калькуляторі.'],
+      ['Чи входять миття вікон і хімчистка?', 'Ні, це додаткові послуги: миття вікон і хімчистку меблів чи килимів рахуємо окремо й додаємо до пропозиції за запитом.'],
+      ['Що робите, якщо помітили поломку чи пошкодження?', 'Повідомляємо про поломки, пошкодження, відсутні речі або інші проблеми, які помічає команда, і надсилаємо фото.'],
+      ['Чи працюєте у вихідні та свята?', 'Так. Прибираємо щодня — за погодженим графіком заїздів.'],
+      ['Ціни з ПДВ чи без? Як оплачувати?', '{vat} Працюємо за договором та інвойсами.'],
+    ],
+    final: ['Потрібне прибирання апартаментів або готелю?', 'Надішліть кількість обʼєктів, площу та графік заїздів — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  offices: { slug: 'ofisi-ta-kovorkingi', name: 'Офіси та коворкінги', h1: 'Прибирання офісів і коворкінгів', icon: 'icons_budivli_7_9b89221a83', tag: 'розрахунок онлайн', solo: true, steps: 'office', calc: { obj: 'office', freq: 2 },
+    lead: 'Регулярне прибирання офісів і коворкінгів до початку або після завершення робочого дня. Закріплюємо графік, команду та перелік робіт у договорі, щоб офіс був чистим без втручання у роботу вашої команди.',
+    trust0: 'Закріплена команда — на обʼєкт виходять знайомі з ним клінери; у разі відсутності працівника організовуємо заміну',
+    trust: 'Прибирання у вихідні за погодженим графіком — без доплат',
+    inclTitle: 'Що входить у прибирання офісу', inclSub: 'Перелік робіт і графік фіксуємо в договорі та чек-листі вашого офісу.',
+    incl: [
+      { t: 'Робочі зони', icon: 'office', items: ['Підлога: пилосос і вологе прибирання', 'Столи, підвіконня, полиці', 'Відбитки на скляних дверях і перегородках', 'Виносимо сміття'] },
+      { t: 'Кухня й зона відпочинку', icon: 'cloche', items: ['Мийка, стільниці, фасади', 'Кавомашина й техніка ззовні', 'Посуд — за домовленістю'] },
+      { t: 'Санвузли', icon: 'bath', items: ['Гігієнічне очищення сантехніки', 'Дзеркала й крани', 'Розхідники — за домовленістю'] },
+      { t: 'Загальні зони', icon: 'towers', items: ['Рецепція й вхід', 'Коридори та сходи', 'Переговорні кімнати'] },
+    ],
+    // what is not in the standard — said once, with links only to the really related services
+    inclInfo: [['plus', '<b>Окремо рахуємо:</b> <a href="{svc:windows}">миття вікон</a>, хімчистку меблів і килимів, <a href="{svc:general}">генеральне</a> та <a href="{svc:reno}">післяремонтне прибирання</a>. Обслуговуєте всю будівлю? Дивіться <a href="{obj:bizcenters}">прибирання бізнес-центрів</a>.']],
+    advSub: 'Закріплена команда, прибирання поза робочим часом і договір, у якому зафіксовано графік та перелік робіт.',
+    adv: [
+      ['people', 'Закріплена команда', 'На обʼєкт виходять знайомі з ним клінери. У разі хвороби чи відсутності працівника організовуємо заміну.'],
+      ['search', 'Перевірена команда та конфіденційність', 'Офіційно оформлені та перевірені працівники. Дотримуємося правил доступу до офісу, а за потреби підписуємо NDA.'],
+      ['moon', 'Поза робочим часом', 'Прибираємо до початку або після завершення робочого дня — без втручання у роботу вашої команди.'],
+      ['headset', 'Менеджер і контроль за чек-листом', 'Перелік робіт фіксуємо в чек-листі, якість перевіряє персональний менеджер.'],
+      ['shield', 'Застрахована відповідальність', 'Відповідальність Shine Guards і порядок роботи на обʼєкті закріплюємо договором. Можливі збитки покриваються відповідно до умов страхування.'],
+      ['sign', 'Договір і пропозиція за 24 години', 'Розрахунок, графік і проєкт договору — протягом доби після запиту.'],
+    ],
+    faqTitle: 'Питання про прибирання офісів',
+    faq: [
+      ['Як формується ціна?', '{priceoffice} Фінальна вартість залежить від переліку робіт і фіксується в комерційній пропозиції.'],
+      ['Чи працюєте за договором?', 'Так. Графік, команду та перелік робіт закріплюємо в договорі. Надаємо інвойси та документи для бухгалтерії.'],
+      ['Чи можна прибирати до або після робочого дня?', 'Так — до початку або після завершення робочого дня. Ключі та час доступу погоджуємо заздалегідь.'],
+      ['Чи буде та сама команда? Хто прибирає?', 'Так. На обʼєкт виходять знайомі з ним клінери — офіційно оформлені та перевірені працівники.'],
+      ['Що буде, якщо клінер не вийшов?', 'У разі хвороби чи відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Хто надає засоби та інвентар?', 'Засоби та інвентар — наші, вони вже у ставці. Розхідники для санвузлів — за домовленістю.'],
+      ['Чи працюєте у вихідні?', 'Так. Прибирання у вихідні за погодженим графіком — без доплат.'],
+      ['Чи можете підписати NDA?', 'Так. Дотримуємося правил доступу до офісу, а за потреби підписуємо NDA.'],
+      ['Ціни з ПДВ чи без? Як щодо інвойсу?', '{vat} Працюємо за офіційним договором, надаємо інвойси та документи для бухгалтерії.'],
+    ],
+    final: ['Потрібне регулярне прибирання офісу?', 'Надішліть площу та бажаний графік — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  shops: { slug: 'magazini-butiki-ta-shourumi', name: 'Магазини, бутики та шоуруми', h1: 'Прибирання магазинів, бутиків і шоурумів', icon: 'icons_budivli_3_2_fb20820c31', tag: 'розрахунок онлайн', solo: true, calc: { obj: 'shop', freq: 3 },
+    lead: 'Підтримуємо торговий зал, вітрини, дзеркала, примірочні та службові зони в бездоганному стані. Працюємо до відкриття або після закриття магазину, щоб не заважати покупцям і персоналу.',
+    trust: 'Прибирання у вихідні за погодженим графіком — без доплат',
+    inclTitle: 'Що входить у прибирання магазину', inclSub: 'Перелік робіт і графік фіксуємо в чек-листі вашого обʼєкта.',
+    incl: [
+      { t: 'Торговий зал', icon: 'shop', items: ['Підлога: пилосос і вологе прибирання', 'Полиці, стелажі, прилавки', 'Касова зона', 'Видалення відбитків з контактних поверхонь'] },
+      { t: 'Вітрини та дзеркала', icon: 'window', items: ['Вітрини зсередини', 'Дзеркала та скляні двері', 'Скляні поверхні без розводів'] },
+      { t: 'Примірочні', icon: 'hanger', items: ['Дзеркала', 'Лави й поверхні', 'Підлога', 'Штори й перегородки — за погодженим чек-листом'] },
+      { t: 'Службові зони', icon: 'boxkey', items: ['Кімната персоналу', 'Санвузол', 'Склад і підсобне приміщення', 'Сміття та базове прибирання службових зон'] },
+    ],
+    inclInfo: [['window', '<b>Миття вітрин зсередини може входити до регулярного обслуговування.</b> Зовнішнє миття — за погодженим графіком та окремим розрахунком.', 'Миття вікон і вітрин', 'svc:windows']],
+    advSub: 'Чистий торговий зал до відкриття, закріплена команда й відповідальність, зафіксована в договорі.',
+    adv: [
+      ['shop', 'Готовність до відкриття', 'Плануємо прибирання так, щоб торговий зал, примірочні та вітрини були готові до приходу перших покупців. Працюємо до відкриття або після закриття магазину.'],
+      ['people', 'Закріплена команда', 'На обʼєкт виходять клінери, які знають магазин і погоджений чек-лист. У разі відсутності працівника організовуємо заміну.'],
+      ['search', 'Перевірена команда та конфіденційність', 'Офіційно оформлені та перевірені працівники. Працюємо за погодженими правилами доступу, а за потреби підписуємо NDA.'],
+      ['shield', 'Застрахована відповідальність', 'Відповідальність Shine Guards і порядок роботи на обʼєкті закріплюємо договором. Можливі збитки покриваються відповідно до умов страхування.'],
+      ['headset', 'Персональний менеджер', 'Контроль якості за чек-листами й один контакт для всіх питань щодо графіка та обʼєкта.'],
+      ['sign', 'Договір і пропозиція за 24 години', 'Розрахунок, графік і проєкт договору — протягом доби після запиту.'],
+    ],
+    faqTitle: 'Питання про прибирання магазинів',
+    faq: [
+      ['Коли ви прибираєте?', 'До відкриття або після закриття магазину — так, щоб не заважати покупцям і персоналу. Точний час фіксуємо в графіку.'],
+      ['Чи можете працювати до відкриття або після закриття?', 'Так. Плануємо прибирання так, щоб торговий зал, примірочні та вітрини були готові до приходу перших покупців. Можливий і індивідуальний час — погоджуємо його з вами.'],
+      ['Чи буде постійна команда?', 'Так. На обʼєкт виходять клінери, які знають магазин і погоджений чек-лист.'],
+      ['Що буде, якщо клінер не вийде?', 'У разі відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Чи миєте вітрини ззовні?', 'Миття вітрин зсередини може входити до регулярного обслуговування. Зовнішнє миття — за погодженим графіком та окремим розрахунком.'],
+      ['Як працюєте з ключами та доступом?', 'Ключі, коди доступу та час роботи погоджуємо заздалегідь. Команда працює відповідно до правил обʼєкта.'],
+      ['Чи можете підписати NDA?', 'Так. За потреби погоджуємо NDA та окремі правила доступу до обʼєкта.'],
+      ['Хто надає засоби та інвентар?', 'Засоби та інвентар — наші, вони вже у ставці. Враховуємо тип поверхонь і погоджений стандарт догляду.'],
+      ['Чи працюєте у вихідні?', 'Так. Прибирання у вихідні за погодженим графіком — без доплат.'],
+      ['Ціни netto чи brutto? Чи працюєте за договором?', '{vat} Працюємо за офіційним договором, надаємо інвойси та документи для бухгалтерії.'],
+    ],
+    final: ['Потрібне регулярне прибирання магазину?', 'Надішліть площу, графік роботи та інформацію про вітрини — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  restaurants: { slug: 'restorani-kafe-ta-bari', name: 'Ресторани, кафе та бари', h1: 'Прибирання ресторанів, кафе та барів', icon: 'hugeicons_cafe_9a27ab6b47', tag: 'увесь заклад або окремі зони', solo: true, calc: { obj: 'restaurant', freq: 3 },
+    lead: 'Регулярне та комплексне прибирання ресторанів, кафе й барів: гостьові зони, бар, санвузли, службові приміщення та кухня. Можемо обслуговувати весь заклад або окремі зони за погодженим графіком і чек-листом.',
+    trust: 'Вихідні та свята за погодженим регулярним графіком — без доплат',
+    inclTitle: 'Що входить у прибирання закладу', inclSub: 'Увесь заклад або окремі зони — за погодженим графіком і чек-листом.',
+    incl: [
+      { t: 'Зал і гостьові зони', icon: 'armchair', items: ['Підлога', 'Меблі та столи', 'Контактні поверхні', 'Сміття'] },
+      { t: 'Бар', icon: 'cloche', items: ['Барна стійка', 'Полиці', 'Зовнішні поверхні обладнання', 'Підлога', 'Скло'] },
+      { t: 'Санвузли', icon: 'bath', items: ['Сантехніка', 'Дзеркала', 'Підлога', 'Сміття', 'Погоджені розхідники'] },
+      { t: 'Службові зони та кухня', icon: 'oven', items: ['Базове регулярне обслуговування згідно з погодженим чек-листом', 'Службові приміщення та кімната персоналу', 'Підлога та сміття'] },
+    ],
+    inclInfo: [['oven', '<b>Потрібне генеральне або спеціалізоване прибирання кухні?</b> Жир, нагар, обладнання й робота з урахуванням вимог HACCP — окрема послуга.', 'Прибирання професійних кухонь', 'obj:kitchens']],
+    advSub: 'Увесь заклад або окремі зони — із закріпленою командою, за погодженим графіком і чек-листом.',
+    adv: [
+      ['cloche', 'Комплексно або окремими зонами', 'Можемо обслуговувати весь заклад або взяти на себе лише зал, бар, санвузли, кухню чи інші погоджені зони.'],
+      ['people', 'Закріплена команда', 'На обʼєкт виходять клінери, які знають заклад і погоджений чек-лист. У разі відсутності працівника організовуємо заміну.'],
+      ['search', 'Перевірені працівники та договір', 'Офіційно оформлені та перевірені працівники. Правила доступу й відповідальність сторін фіксуємо в договорі.'],
+      ['clock', 'Вихідні та свята без доплат', 'Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат.'],
+      ['headset', 'Персональний менеджер', 'Контроль якості за чек-листами й один контакт для всіх питань щодо графіка та обʼєкта.'],
+      ['sign', 'Пропозиція за 24 години', 'Розрахунок, графік і проєкт договору — протягом доби після запиту.'],
+    ],
+    faqTitle: 'Питання про прибирання ресторанів, кафе та барів',
+    faq: [
+      ['Скільки коштує прибирання ресторану, кафе або бару?', '{price} Фінальну вартість фіксуємо в комерційній пропозиції — надсилаємо її протягом 24 годин.'],
+      ['Чи можна замовити прибирання лише окремої зони?', 'Так. Можемо обслуговувати весь заклад або взяти на себе лише зал, бар, санвузли, кухню чи інші погоджені зони.'],
+      ['Коли ви прибираєте?', 'До відкриття або після закриття закладу — за погодженим графіком.'],
+      ['Чи працюєте за договором?', 'Так. Графік, перелік зон, чек-лист, правила доступу й відповідальність сторін фіксуємо в договорі. Надаємо інвойси та документи для бухгалтерії.'],
+      ['Чи буде постійна команда?', 'Так. На обʼєкт виходять клінери, які знають заклад і погоджений чек-лист.'],
+      ['Що буде, якщо клінер не вийде?', 'У разі відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Хто надає засоби та інвентар?', 'Засоби та інвентар — наші, вони вже у ставці. Розхідники для санвузлів поповнюємо за домовленістю.'],
+      ['Чи працюєте у вихідні та свята?', 'Так. Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат.'],
+      ['Ціни вказані з ПДВ чи без?', '{vat}'],
+      ['А якщо потрібне генеральне прибирання кухні або знежирення?', 'Це окрема послуга — <a href="{kitchens}">прибирання професійних кухонь</a>: генеральне прибирання, інтенсивне знежирення та робота з урахуванням вимог HACCP.'],
+    ],
+    final: ['Потрібне регулярне прибирання ресторану, кафе або бару?', 'Надішліть площу, перелік зон і бажаний графік — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  kitchens: { slug: 'profesijni-kuhni-ta-gastronomiya', name: 'Професійні кухні та гастрономія', h1: 'Прибирання професійних кухонь', icon: 'cbi_kitchen_alt_5dda9538f8', tag: 'з урахуванням вимог HACCP', haccp: true, solo: true, calc: { obj: 'restaurant', haccp: true, freq: 5 },
+    lead: 'Регулярне та генеральне прибирання професійних кухонь: робочі поверхні, обладнання, плити, підлога та доступні зони витяжок. Видаляємо жир і складні забруднення та працюємо з урахуванням вимог HACCP.',
+    trust: 'З урахуванням вимог HACCP та гігієнічного плану вашого закладу',
+    inclTitle: 'Що входить у прибирання кухні', inclSub: 'Регулярне обслуговування — за погодженим чек-листом, генеральне — за погодженим ТЗ.',
+    incl: [
+      { t: 'Обладнання', icon: 'oven', items: ['Плити, печі, грилі', 'Фритюрниці та робочі столи', 'Зовнішні поверхні холодильного обладнання', 'Доступні поверхні обладнання'] },
+      { t: 'Витяжки, стіни та вертикальні поверхні', icon: 'spray', items: ['Доступні поверхні витяжок', 'Кахель і стіни', 'Ручки та вимикачі'] },
+      { t: 'Підлога та мийна зона', icon: 'bucket', items: ['Підлога та стики', 'Мийні ванни', 'Сміття й контейнери', 'Локальне знежирення'] },
+    ],
+    // the general cleaning is shown apart from the regular checklist: another job, another way of pricing
+    general: { t: 'Генеральне прибирання кухні', x: 'Коли регулярного обслуговування вже недостатньо:', items: ['Накопичений жир', 'Складні забруднення', 'Важкодоступні зони', 'Глибше очищення обладнання та поверхонь за погодженим ТЗ'],
+      note: 'Фінальну ціну підтверджуємо після фото або огляду.', btn: 'Розрахувати генеральне прибирання' },
+    inclInfo: [['search', 'Очищення вентиляційних каналів, жировловлювачів, демонтаж обладнання та інші спеціалізовані роботи узгоджуються окремо.'],
+      ['cloche', '<b>Потрібне регулярне прибирання всього закладу?</b> Зал, бар, санвузли, службові зони й кухня — за одним графіком.', 'Ресторани, кафе та бари', 'obj:restaurants']],
+    advSub: 'Регулярне й генеральне прибирання кухні — з урахуванням вимог HACCP, за погодженим ТЗ і договором.',
+    adv: [
+      ['doc', 'З урахуванням вимог HACCP', 'Прибирання з урахуванням вимог HACCP та гігієнічного плану вашого закладу.'],
+      ['receipt', 'Ваш HACCP-план і таблиці контролю', 'За наявності внутрішнього HACCP-плану, таблиць контролю або чек-листів адаптуємо процес прибирання під вимоги обʼєкта.'],
+      ['bucket', 'Розділення інвентарю за зонами', 'Використовуємо окремий інвентар для різних зон, щоб мінімізувати ризик перехресного забруднення.'],
+      ['spray', 'Засоби для харчових зон', 'Використовуємо професійні засоби відповідно до типу поверхні та вимог обʼєкта.'],
+      ['people', 'Закріплена й перевірена команда', 'На обʼєкт виходять офіційно оформлені клінери, які знають кухню й погоджений чек-лист. У разі відсутності працівника організовуємо заміну.'],
+      ['sign', 'Договір і погоджений обсяг робіт', 'Перелік робіт, графік і відповідальність сторін фіксуємо в договорі.'],
+    ],
+    faqTitle: 'Питання про прибирання професійних кухонь',
+    faq: [
+      ['Що входить у регулярне та генеральне прибирання кухні?', 'Регулярне: робочі поверхні, плити й зовнішні поверхні обладнання, мийна зона, підлога та сміття — за погодженим чек-листом. Генеральне: накопичений жир, складні забруднення, важкодоступні зони та глибше очищення обладнання й поверхонь за погодженим ТЗ.'],
+      ['Як ви працюєте з HACCP?', 'Прибираємо з урахуванням вимог HACCP та гігієнічного плану вашого закладу: окремий інвентар для різних зон і професійні засоби відповідно до типу поверхні.'],
+      ['Чи працюєте за HACCP-планом клієнта?', 'Так. За наявності внутрішнього HACCP-плану, таблиць контролю або чек-листів адаптуємо процес прибирання під вимоги обʼєкта.'],
+      ['Які засоби ви використовуєте?', 'Професійні засоби відповідно до типу поверхні та вимог обʼєкта. Засоби та інвентар — наші.'],
+      ['Чи чистите витяжки та фільтри?', 'Миємо доступні поверхні витяжок. Фільтри — за погодженим ТЗ. Очищення вентиляційних каналів і жировловлювачів узгоджується окремо.'],
+      ['Чи входить сильне знежирення?', 'Локальне знежирення входить у регулярне обслуговування. Накопичений жир і нагар знімаємо під час генерального прибирання або інтенсивного знежирення — фінальну ціну підтверджуємо після фото або огляду.'],
+      ['Чи можна замовити прибирання разово?', 'Так — разове або генеральне прибирання, зокрема перед санітарною перевіркою: напишіть дату, і ми підлаштуємо графік.'],
+      ['Чи потрібна оцінка за фото?', 'Для регулярного обслуговування достатньо площі, графіка й переліку зон. Для генерального прибирання та сильного жиру фінальну ціну підтверджуємо після фото або огляду кухні.'],
+      ['Що не входить у прибирання?', 'Очищення вентиляційних каналів, жировловлювачів, демонтаж обладнання та інші спеціалізовані роботи узгоджуються окремо.'],
+      ['Ціни з ПДВ чи без? Чи працюєте за договором?', '{vat} Працюємо за офіційним договором, надаємо інвойси та документи для бухгалтерії.'],
+    ],
+    final: ['Потрібне прибирання професійної кухні?', 'Надішліть площу кухні, фото та бажаний графік — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  gyms: { slug: 'fitnes-czentri-ta-sportzali', name: 'Фітнес-центри та спортзали', h1: 'Прибирання фітнес-центрів і спортзалів', icon: 'icons_budivli_8_f98373696e', tag: 'розрахунок онлайн', solo: true, calc: { obj: 'gym', freq: 5 },
+    lead: 'Регулярне прибирання тренажерних залів, роздягалень, душових, санвузлів і зон рецепції. Працюємо за графіком клубу — до або після пікових годин, а за потреби підтримуємо чистоту протягом дня.',
+    trust0: 'Підлаштовуємо графік під роботу клубу та потік відвідувачів',
+    trust: 'Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат',
+    inclTitle: 'Що входить у прибирання клубу', inclSub: 'Перелік зон і графік на кожен день фіксуємо в чек-листі вашого клубу.',
+    incl: [
+      { t: 'Тренажерний зал', icon: 'dumbbell', items: ['Підлога', 'Лави, мати, дзеркала', 'Гігієнічне очищення контактних поверхонь тренажерів', 'Ручки, поручні та інші часто використовувані поверхні'] },
+      { t: 'Роздягальні та душові', icon: 'bath', items: ['Душові, плитка та змішувачі', 'Шафки й лави', 'Санвузли', 'Підлога та мокрі зони'] },
+      { t: 'Зали групових занять', icon: 'people', items: ['Підлога', 'Дзеркала', 'Мати та погоджений спортивний інвентар', 'Контактні поверхні'] },
+      { t: 'Рецепція та зони відпочинку', icon: 'armchair', items: ['Рецепція й вхід', 'Lounge / кавова зона', 'Контактні поверхні', 'Сміття'] },
+    ],
+    inclInfo: [['clock', '<b>Потрібне підтримуюче прибирання протягом дня?</b> Для клубів, де одного прибирання на добу недостатньо, додаємо денні обходи — розрахуємо їх у пропозиції.']],
+    advSub: 'Графік під роботу клубу, чисті мокрі зони й закріплена команда — зафіксовані в договорі.',
+    adv: [
+      ['clock', 'Графік під роботу клубу', 'Підлаштовуємо графік під роботу клубу та потік відвідувачів: до або після пікових годин, а за потреби — протягом дня.'],
+      ['bath', 'Контроль мокрих зон', 'Регулярно очищуємо душові, сантехніку, плитку та роздягальні — зони, де відвідувачі найбільше помічають рівень гігієни.'],
+      ['dumbbell', 'Делікатний догляд за обладнанням', 'Підбираємо засоби й метод очищення відповідно до поверхні, щоб не пошкоджувати тренажери, гумові покриття, дзеркала та інший інвентар.'],
+      ['people', 'Закріплена та перевірена команда', 'На обʼєкт виходять офіційно оформлені й перевірені клінери, які знають план клубу та чек-лист. У разі відсутності працівника організовуємо заміну. Ключі, доступ і правила роботи погоджуємо заздалегідь.'],
+      ['headset', 'Менеджер і контроль за чек-листом', 'Перелік робіт фіксуємо в чек-листі, якість перевіряє персональний менеджер.'],
+      ['sign', 'Договір і застрахована відповідальність', 'Відповідальність сторін і порядок роботи на обʼєкті закріплюємо договором; можливі збитки покриваються відповідно до умов страхування.'],
+    ],
+    faqTitle: 'Питання про прибирання фітнес-клубів',
+    faq: [
+      ['Як часто потрібно прибирати фітнес-клуб?', 'Залежить від потоку відвідувачів. Зазвичай клуб прибирають щодня, а найбільше уваги потребують мокрі зони — душові й роздягальні. Перелік зон на кожен день фіксуємо в чек-листі.'],
+      ['Чи можете підтримувати чистоту протягом дня?', 'Так. Для клубів із великим потоком відвідувачів додаємо підтримуюче прибирання протягом дня — розраховуємо його окремо в пропозиції.'],
+      ['Як очищуєте тренажери?', 'Виконуємо гігієнічне очищення контактних поверхонь — ручок, сидінь, поручнів. Засоби й метод підбираємо відповідно до поверхні, щоб не пошкодити тренажери, гумові покриття та дзеркала.'],
+      ['Як прибираєте душові та роздягальні?', 'Очищуємо душові, плитку, змішувачі й сантехніку, протираємо шафки та лави, миємо підлогу й мокрі зони — професійними засобами для таких поверхонь.'],
+      ['Чи буде постійна команда?', 'Так. На обʼєкт виходять клінери, які знають план клубу та чек-лист.'],
+      ['Що буде, якщо клінер не вийде?', 'У разі відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Чи працюєте за графіком клубу та у вихідні?', 'Так. Підлаштовуємо графік під роботу клубу та потік відвідувачів. Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат.'],
+      ['Хто надає засоби та інвентар?', 'Засоби та інвентар — наші, вони вже у ставці. Якщо зручніше, працюємо засобами клубу.'],
+      ['Чи працюєте за договором?', 'Так. Графік, перелік зон і відповідальність сторін фіксуємо в договорі. Надаємо інвойси та документи для бухгалтерії.'],
+      ['Ціни netto чи brutto?', '{vat}'],
+    ],
+    final: ['Потрібне регулярне прибирання фітнес-клубу або спортзалу?', 'Надішліть площу, графік роботи та перелік зон — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  medical: { slug: 'medichni-czentri-kliniki-ta-stomatologiyi', name: 'Медичні центри, клініки та стоматології', h1: 'Прибирання медичних центрів, клінік і стоматологій', icon: 'icons_budivli_2_6a11ece0ad', tag: 'розрахунок за оглядом', solo: true, steps: 'medical', calc: { obj: 'other', freq: 5 },
+    lead: 'Регулярне прибирання медичних центрів, клінік і стоматологій: кабінети, зони очікування, санвузли та службові приміщення. Працюємо за погодженим планом прибирання й дезінфекції закладу, використовуємо професійні засоби та ведемо роботи за чек-листами.',
+    trust0: 'Працюємо за протоколами вашого закладу: чек-листи, засоби та частота — за внутрішнім планом гігієни й дезінфекції',
+    trust: 'Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат',
+    inclTitle: 'Що входить у прибирання закладу', inclSub: 'Зони, частоту й протокол робіт погоджуємо після огляду.',
+    incl: [
+      { t: 'Кабінети та процедурні зони', icon: 'doc', items: ['Поверхні за погодженим чек-листом', 'Підлога', 'Ручки, вимикачі та інші контактні поверхні'] },
+      { t: 'Зони очікування та рецепція', icon: 'armchair', items: ['Меблі й поверхні', 'Підлога', 'Скло, двері, контактні точки'] },
+      { t: 'Санвузли', icon: 'bath', items: ['Сантехніка', 'Дзеркала та крани', 'Підлога', 'Сміття та погоджені витратні матеріали'] },
+      { t: 'Службові та допоміжні приміщення', icon: 'boxkey', items: ['Кімнати персоналу', 'Коридори', 'Інші погоджені зони'] },
+    ],
+    // the borders of the standard service — said on the page, not left to the client's guess
+    inclInfo: [['shield', 'Медичні відходи, гострі предмети та біологічно забруднені матеріали не входять у стандартне прибирання та обробляються за окремим протоколом закладу.'],
+      ['search', 'Спеціальні стерильні, операційні та інші зони з окремими вимогами оцінюємо індивідуально.']],
+    advSub: 'Протоколи вашого закладу, окремий інвентар для різних зон і закріплена перевірена команда.',
+    adv: [
+      ['doc', 'Працюємо за протоколами вашого закладу', 'Адаптуємо чек-листи, засоби та частоту прибирання під внутрішній план гігієни й дезінфекції клініки.'],
+      ['bucket', 'Розділення інвентарю за зонами', 'Використовуємо окремий інвентар для санвузлів, кабінетів та загальних зон, щоб знизити ризик перехресного забруднення.'],
+      ['spray', 'Професійні засоби', 'Використовуємо засоби відповідно до типу поверхні та погодженого плану гігієни/дезінфекції обʼєкта.'],
+      ['people', 'Закріплена команда', 'На обʼєкт виходять працівники, які знають план клініки, правила доступу та погоджені чек-листи. У разі відсутності організовуємо заміну.'],
+      ['search', 'Перевірена команда та конфіденційність', 'Офіційно оформлені та перевірені працівники. Команда працює лише в погоджених зонах і відповідно до правил доступу закладу, а за потреби підписуємо NDA.'],
+      ['sign', 'Договір, менеджер і страхування', 'Відповідальність сторін і порядок роботи фіксуємо в договорі, якість за чек-листами контролює персональний менеджер. Можливі збитки покриваються відповідно до умов страхування.'],
+    ],
+    faqTitle: 'Питання про прибирання клінік і медичних центрів',
+    faq: [
+      ['Чи працюєте за планом гігієни нашої клініки?', 'Так. Адаптуємо чек-листи, засоби та частоту прибирання під внутрішній план гігієни й дезінфекції вашого закладу.'],
+      ['Які засоби використовуєте?', 'Професійні засоби відповідно до типу поверхні та погодженого плану гігієни й дезінфекції обʼєкта.'],
+      ['Чи розділяєте інвентар за зонами?', 'Так. Використовуємо окремий інвентар для санвузлів, кабінетів та загальних зон, щоб знизити ризик перехресного забруднення.'],
+      ['Чи виконуєте дезінфекцію контактних поверхонь?', 'Так — у межах погодженого плану гігієни й дезінфекції закладу та погодженими засобами. Там, де дезінфекція планом не передбачена, виконуємо гігієнічне очищення.'],
+      ['Чи працюєте з медичними відходами?', 'Ні. Медичні відходи, гострі предмети та біологічно забруднені матеріали не входять у стандартне прибирання та обробляються за окремим протоколом закладу.'],
+      ['Чи прибираєте процедурні та спеціальні приміщення?', 'Процедурні кабінети прибираємо за погодженим чек-листом. Спеціальні стерильні, операційні та інші зони з окремими вимогами оцінюємо індивідуально.'],
+      ['Чи буде постійна команда?', 'Так. На обʼєкт виходять працівники, які знають план клініки, правила доступу та погоджені чек-листи.'],
+      ['Чи можете підписати NDA?', 'Так. Команда працює лише в погоджених зонах і відповідно до правил доступу закладу, а за потреби підписуємо NDA.'],
+      ['Що буде, якщо клінер не вийде?', 'У разі відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Чи працюєте за договором?', 'Так. Зони, частоту, протокол робіт і відповідальність сторін фіксуємо в договорі. Надаємо інвойси та документи для бухгалтерії.'],
+      ['Ціни netto чи brutto?', '{vat} Фінальна вартість — після огляду обʼєкта та погодження зон, частоти й протоколу робіт.'],
+    ],
+    final: ['Потрібне регулярне прибирання клініки або медичного центру?', 'Надішліть площу, кількість кабінетів і ваші вимоги до гігієни — проведемо огляд та підготуємо комерційну пропозицію протягом 24 годин.'] },
+  cars: { slug: 'avtosaloni-ta-servisni-czentri', name: 'Автосалони та сервісні центри', h1: 'Прибирання автосалонів і сервісних центрів', icon: 'heroicons_building_storefront_68ef12c0f1', tag: 'розрахунок онлайн', solo: true, calc: { obj: 'shop', freq: 3 },
+    lead: 'Регулярне прибирання автосалонів і сервісних центрів: шоуруми, скляні поверхні, зони очікування, офіси, санвузли та сервісні приміщення. Обсяг і графік робіт адаптуємо під ваш обʼєкт.',
+    trust0: 'Працюємо за графіком автосалону або сервісного центру, не заважаючи клієнтам і персоналу',
+    trust: 'Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат',
+    inclTitle: 'Що входить у прибирання автосалону', inclSub: 'Шоурум, клієнтські зони та сервісна частина — кожна за своїм чек-листом.',
+    incl: [
+      { t: 'Шоурум', icon: 'shop', items: ['Підлога та плінтуси', 'Скляні фасади й двері зсередини', 'Столи, стійки, меблі', 'Видалення відбитків зі скла та контактних поверхонь'] },
+      { t: 'Зона очікування та клієнтські зони', icon: 'armchair', items: ['Дивани, столи', 'Кавова зона', 'Рецепція', 'Санвузли', 'Сміття'] },
+      { t: 'Офіси та службові приміщення', icon: 'office', items: ['Робочі місця', 'Підлога', 'Кухня / кімната персоналу', 'Коридори та допоміжні зони'] },
+      { t: 'Сервісна зона', icon: 'roller', items: ['Підлога', 'Робочі проходи', 'Погоджені поверхні', 'Сміття та стандартні забруднення за чек-листом'] },
+    ],
+    // ordinary cleaning and heavy industrial cleaning of the workshop are different jobs with different prices
+    inclInfo: [['roller', 'Інтенсивне очищення мастил, технічних рідин і складних виробничих забруднень оцінюємо окремо.'],
+      ['shield', 'Технічні та небезпечні відходи не входять у стандартне прибирання й обробляються відповідно до процедур клієнта.']],
+    advSub: 'Бездоганні клієнтські зони, закріплена команда й погоджені правила доступу.',
+    adv: [
+      ['shop', 'Бездоганний вигляд клієнтських зон', 'Приділяємо особливу увагу склу, дзеркалам, підлозі та контактним поверхням — зонам, які формують перше враження про бренд.'],
+      ['spray', 'Делікатний догляд за поверхнями', 'Підбираємо метод очищення відповідно до скла, металу, глянцевих поверхонь, меблів і типу підлогового покриття.'],
+      ['people', 'Закріплена команда', 'На обʼєкт виходять клінери, які знають план автосалону, правила доступу та чек-лист. У разі відсутності працівника організовуємо заміну.'],
+      ['search', 'Перевірена команда та контроль доступу', 'Офіційно оформлені та перевірені працівники. Правила доступу, ключі та час роботи погоджуємо заздалегідь.'],
+      ['headset', 'Менеджер і контроль за чек-листом', 'Перелік робіт фіксуємо в чек-листі, якість перевіряє персональний менеджер.'],
+      ['sign', 'Договір і застрахована відповідальність', 'Відповідальність сторін і порядок роботи на обʼєкті закріплюємо договором; можливі збитки покриваються відповідно до умов страхування.'],
+    ],
+    faqTitle: 'Питання про прибирання автосалонів',
+    faq: [
+      ['Чи можна замовити лише шоурум або лише сервісну зону?', 'Так. У калькуляторі можна обрати весь обʼєкт або окремі зони: шоурум, зону очікування, офіси, санвузли, сервісну зону чи склад.'],
+      ['Як формується ціна?', '{price} Фінальну вартість фіксуємо в комерційній пропозиції — надсилаємо її протягом 24 годин.'],
+      ['Чи буде постійна команда?', 'Так. На обʼєкт виходять клінери, які знають план автосалону, правила доступу та чек-лист.'],
+      ['Що буде, якщо клінер не вийде?', 'У разі відсутності працівника організовуємо заміну — графік прибирань не зривається.'],
+      ['Як працюєте в зоні з автомобілями?', 'Працюємо обережно в зонах експозиції автомобілів та відповідно до правил обʼєкта. Автомобілі не переміщуємо.'],
+      ['Чи прибираєте мастило та складні забруднення?', 'У сервісній зоні прибираємо підлогу, проходи й стандартні забруднення за чек-листом. Інтенсивне очищення мастил, технічних рідин і складних виробничих забруднень оцінюємо окремо. Технічні та небезпечні відходи не входять у стандартне прибирання й обробляються відповідно до процедур клієнта.'],
+      ['Чи входить очищення автомобілів?', 'Ні, стандартна послуга охоплює приміщення автосалону та погоджені зони. Догляд за автомобілями не входить, якщо інше не погоджено окремо.'],
+      ['Чи миєте скляні фасади?', 'Скляні фасади й двері зсередини входять у прибирання шоуруму. Зовнішнє миття — за погодженим графіком та окремим розрахунком.'],
+      ['Як працюєте з ключами та доступом?', 'Правила доступу, ключі та час роботи погоджуємо заздалегідь. За запитом підписуємо NDA.'],
+      ['Хто надає засоби та інвентар?', 'Засоби та інвентар — наші, вони вже у ставці. Метод очищення підбираємо відповідно до типу поверхні.'],
+      ['Чи працюєте за договором? Ціни з ПДВ чи без?', 'Так, за офіційним договором: надаємо інвойси та документи для бухгалтерії. {vat}'],
+    ],
+    final: ['Потрібне регулярне прибирання автосалону або сервісного центру?', 'Надішліть площу, перелік зон і бажаний графік — підготуємо комерційну пропозицію протягом 24 годин.'] },
+  bizcenters: { slug: 'biznes-czentri', name: 'Бізнес-центри', h1: 'Прибирання бізнес-центрів', icon: 'icons_budivli_1_2_6e78263219', tag: 'розрахунок онлайн', calc: { obj: 'office', freq: 5, hours: 6, cleaners: 2 },
+    lead: 'Холи, ліфти, сходи, санвузли й паркінг — через ці зони щодня проходять сотні людей. Прибираємо за графіком будівлі та за договором, у якому закріплено відповідальність сторін.',
+    incl: [
+      { t: 'Загальні зони', items: ['Вхід і рецепція', 'Ліфтові холи й ліфти', 'Сходи й коридори'] },
+      { t: 'Санвузли', items: ['Гігієнічне очищення сантехніки', 'Поповнення розхідників', 'Сміття'] },
+      { t: 'Паркінг і вхід', items: ['Паркінг — за графіком', 'Скляні двері на вході', 'Урни біля входу'] },
+    ],
+    faq: [
+      ['Чи прибираєте офіси орендарів?', 'Так — за окремими договорами з орендарями або в межах договору з бізнес-центром.'],
+    ] },
+  cinemas: { slug: 'kinoteatri-teatri-ta-rozvazhalni-zoni', name: 'Кінотеатри, театри та розважальні зони', h1: 'Прибирання кінотеатрів, театрів і розважальних зон', icon: 'icons_budivli_fef08e7c5c', tag: 'розрахунок за оглядом', calc: { obj: 'other' },
+    lead: 'Встигаємо прибрати зал між сеансами, а після закриття — фоє, каси, гардероби, фудкорт та ігрові зони. Працюємо за вашим розкладом подій.',
+    incl: [
+      { t: 'Зали', items: ['Прибирання між сеансами', 'Крісла й проходи', 'Сміття'] },
+      { t: 'Фоє й каси', items: ['Каси й гардероби', 'Фудкорт і бар', 'Скло й дзеркала'] },
+      { t: 'Санвузли', items: ['Гігієнічне очищення сантехніки', 'Поповнення розхідників', 'Підлога'] },
+    ],
+    faq: [
+      ['Скільки часу потрібно між сеансами?', 'Залежить від залу й кількості клінерів. Розрахуємо після огляду, щоб вкластися у вашу перерву.'],
+    ] },
+  beauty: { slug: 'saloni-krasi-spa-ta-barbershopi', name: 'Салони краси, SPA та барбершопи', h1: 'Прибирання салонів краси, SPA та барбершопів', icon: 'icons_budivli_10_b23cf55ae6', tag: 'розрахунок онлайн', calc: { obj: 'shop', freq: 3, hours: 2 },
+    lead: 'Делікатно прибираємо робочі місця майстрів, крісла, кушетки й SPA-зони: збираємо волосся, фарбу й віск, протираємо поверхні.',
+    incl: [
+      { t: 'Робочі місця', items: ['Крісла й кушетки', 'Дзеркала й столики', 'Волосся, фарба, віск'] },
+      { t: 'SPA-зона', items: ['Душові й кахель', 'Гігієнічна обробка поверхонь', 'Рушники — за домовленістю'] },
+      { t: 'Рецепція', items: ['Стійка й зона очікування', 'Підлога', 'Санвузол'] },
+    ],
+    faq: [
+      ['Коли ви прибираєте?', 'Після закриття салону або рано вранці — так, щоб не заважати майстрам і клієнтам.'],
+    ] },
+  malls: { slug: 'torgovi-czentri', name: 'Торгові центри', h1: 'Прибирання торгових центрів', icon: 'icons_budivli_2_2_c0582bea8c', tag: 'розрахунок за оглядом', calc: { obj: 'other' },
+    lead: 'Галереї, атріуми, фудкорти й ескалатори — чисто навіть у пікові години. Працюємо змінами, зокрема вночі, за правилами вашого ТЦ.',
+    incl: [
+      { t: 'Галереї й атріуми', items: ['Підлога галерей і атріумів', 'Скло й перила', 'Ескалатори й ліфти'] },
+      { t: 'Фудкорт', items: ['Столи й стільці', 'Підлога між піками відвідувачів', 'Сміття'] },
+      { t: 'Санвузли', items: ['Гігієнічне очищення сантехніки', 'Поповнення розхідників', 'Черговий клінер'] },
+    ],
+    faq: [
+      ['Чи працюєте вночі?', 'Так, працюємо змінами, зокрема вночі, — за внутрішніми правилами вашого торгового центру.'],
+    ] },
+};
+const OBJ_MAIN = ['hotels', 'offices', 'shops', 'restaurants', 'kitchens', 'gyms', 'medical', 'cars'];
+const OBJ_MORE = ['bizcenters', 'cinemas', 'beauty', 'malls'];
+// the calculator's object → its page
+// Client cases for the business object pages: CASES[objectId] = [case, …]. A case:
+//   { kind, name, place, facts: [[label, value] × 4], task, work: [...], result, quote?: [text, who], before?, after? }
+// (before / after are photos taken from the same angle; `note` — what is special about the object; result / quote /
+// photos appear only when the owner gives them). Nothing about a client is invented and no placeholder is published:
+// a page without a real case has no case block. The layout sample opens only by the ?demo=cases address.
+// A client appears here only when the owner explicitly asks to publish that client's case.
+const CASES = {};
+const OBJ_PAGE = { office: 'offices', restaurant: 'restaurants', gym: 'gyms', shop: 'shops', apartments: 'hotels' };
+const CUT = (v, f) => `https://res.cloudinary.com/dbiy7qyfe/image/upload/h_640,f_auto,q_auto/${v}/${f}`;
+// Photos of the team (photo shoot, April): optimised copies live in assets/team. `id` is the same frame in the owner's
+// Google Drive folder — the single-file build has no assets folder next to it and shows the photo from there.
+const DPH = (id, w = 1600) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
+// [0] is the team portrait (carries the "our team" badge); the rest are working shots with a short caption
+const TEAM_GALLERY = [
+  { file: 'team-group.jpg', id: '1D90VHEk3WgNUqbgqGvXulib022nUrcmp', alt: 'Команда клінерів Shine Guards у формі', team: true, only: 'business' },
+  { id: '1Gl8Ss7fA7aOXGlnU-bv1sDMYlwODTNVE', alt: 'Команда клінерів Shine Guards у квартирі', team: true, only: 'private', pos: '50% 30%' },
+  { file: 'work-team.jpg', id: '1YoQiDQkufjsNacBn9TumkHgjKVmNuX7Z', alt: 'Клінерка Shine Guards протирає скляний стіл, колеги прибирають вітальню', cap: 'Працюємо командою', pos: '55% 50%' },
+  { id: '1Ea8A7Buk9lEtgLeTszfyscD8ahfGllga', alt: 'Дві клінерки Shine Guards прибирають кухню', cap: 'Кухня командою', pos: '45% 50%' },
+  { id: '1xRlguUOV3HARtLEQ2GraP6F2NB89fy38', alt: 'Клінерка Shine Guards чистить духовку', cap: 'Духовка всередині', pos: '55% 45%' },
+  { file: 'work-detail.jpg', id: '1WD5k0ZAld3PCfTQZDrDXQUPms64Nm2ZV', alt: 'Клінерка Shine Guards у рукавичках протирає стіл серветкою', cap: 'Увага до деталей', pos: '70% 50%' },
+  { id: '1jqAVl0zIvb0s8Fsr4q-Wfhvi5A5xPnag', alt: 'Клінерка Shine Guards пилососить підлогу', cap: 'Підлога начисто', pos: '62% 35%' },
+  { id: '1uMIUQovxgWLaXKnibQkw4ehD_DBgrriQ', alt: 'Клінерка Shine Guards протирає дзеркало у ванній', cap: 'Дзеркала до блиску', pos: '70% 40%' },
+  { file: 'work-room.jpg', id: '1SArKm8VBW6DxBxgXP4bQCrrnSitd_qrv', alt: 'Три клінерки Shine Guards прибирають вітальню', cap: 'Свій інвентар і засоби' },
+  { id: '1A1y_GB028JIzIHtns-htyD8o_6rECyHZ', alt: 'Клінерка Shine Guards миє холодильник усередині', cap: 'Холодильник усередині', pos: '68% 40%' },
+  { file: 'team-sofa.jpg', id: '1i1TeVN1HkytFcGGD7a_DbKhkQ-Bm5qtg', alt: 'Три клінерки Shine Guards на дивані', cap: 'Люди, яким довіряють дім', capB: 'Люди, яким довіряють обʼєкти' },
+];
+// the first screen of the business object pages: three other frames next to the numbers (the gallery below shows the rest)
+const HERO_PHOTOS = [
+  { id: '1SN_s3e8lYuGUDLhUNEmrL6Vp9Sb9CPOb', alt: 'Клінерка Shine Guards протирає скляний стіл у вітальні', pos: '62% 50%' },
+  { id: '1JRJGUZiDpFhg_cv61dfxPWigziSIJbrY', alt: 'Клінерка Shine Guards миє вікно', pos: '72% 35%' },
+  { id: '1QeOkaLuJDbrVYZp6idrsk9rKdRbYCnPP', alt: 'Клінерка Shine Guards протирає світильник зі стремʼянки', pos: '60% 22%' },
+];
+// cut-out figures for the "home / business" cards on the About page
+const TEAM_CUTS = [
+  { img: CUT('v1781216321', 'window_e7a518f314.png'), alt: 'Клінерка Shine Guards миє вікно' },
+  { img: CUT('v1781199642', 'IMG_4014_710f19b374.png'), alt: 'Клінерка Shine Guards розкладає рушники' },
+];
+// B2B mini-cases (examples of how objects are served — replace with real ones)
+const BIZ_CASES = [
+  ['office', 'Офіс', '5 разів на тиждень', 'Закріплена команда та контроль якості за чек-листом.'],
+  ['bed', 'Готель і апартаменти', 'Щоденне прибирання', 'Заміна білизни, фотозвіт і регулярна звітність.'],
+  ['cloche', 'Ресторан', 'Ранкове прибирання', 'З урахуванням вимог HACCP, професійні засоби для кухні.'],
+];
+const TEAM_ROUND = 'https://res.cloudinary.com/dbiy7qyfe/image/upload/c_fill,g_faces,w_160,h_160,f_auto,q_auto/v1781018440/ABOUT_US_ROUND_e913ada099.jpg';
+
+// Real numbers from shineguards.com: [number, label, suffix, icon, one line of context]
+const STATS_PRIVATE = [
+  ['2485', 'виконаних прибирань', '+', 'bucket', 'квартири, будинки, офіси й апартаменти'],
+  ['12357', 'годин професійного клінінгу', '+', 'clock', 'кожна — за чек-листом пакета'],
+  ['4,9', 'рейтинг у Google', ' ★', 'google', '58 відгуків на Google Maps'],
+  ['Страхування', 'відповідальності', '', 'shield', 'збитки покриваються відповідно до умов страхування'],
+];
+const STATS_BIZ = [
+  ['20', 'бізнес-обʼєктів на постійному обслуговуванні', '+', 'towers', 'прибираємо за їхнім графіком'],
+  ['2485', 'виконаних прибирань', '+', 'bucket', 'офіси, заклади, апартаменти'],
+  ['до 30', 'хв — відповідь менеджера у робочий час', '', 'headset', 'щодня, 9:00–18:00'],
+  ['4,9', 'рейтинг у Google', ' ★', 'google', '58 відгуків на Google Maps'],
+];
+
+const ADV_PRIVATE = [
+  ['doc', 'Чек-лист на кожному прибиранні', 'Клінери працюють за чек-листом вашого пакета — нічого не пропускаємо.'],
+  ['search', 'Контроль якості', 'Перевіряємо результат і збираємо ваш відгук після кожного прибирання.'],
+  ['people', 'Закріплена команда', 'Для регулярних клієнтів — ті самі клінери, які вже знають ваш дім.'],
+  ['clock', 'Заміна без зриву графіка', 'Якщо клінер захворів — надішлемо іншого, прибирання відбудеться вчасно.'],
+  ['headset', 'Менеджер на звʼязку', 'Супроводжує вас від бронювання до завершення прибирання.'],
+  ['shield', 'Застрахована відповідальність', 'Якщо під час прибирання щось пошкоджено — збитки покриваються відповідно до умов страхування.'],
+];
+const ADV_BIZ = [
+  ['people', 'Надійні люди', 'Офіційно оформлені та перевірені працівники — без випадкових людей на вашому обʼєкті.'],
+  ['shield', 'Застрахована відповідальність', 'Відповідальність сторін закріплюємо договором. Можливі збитки покриваються відповідно до умов страхування.'],
+  ['card', 'Фіксована ціна', 'Ставка фіксується в договорі — без доплат і сюрпризів в інвойсі.'],
+  ['clock', 'Вихідні та свята без доплат', 'Прибирання у вихідні та свята за погодженим регулярним графіком — без доплат.'],
+  ['sign', 'Пропозиція за 24 години', 'Розрахунок, графік і договір — протягом доби після запиту.'],
+  ['headset', 'Персональний менеджер', 'Контроль якості за чек-листами, фотозвіт і заміна персоналу без зриву графіка.'],
+];
+
+const PROMOS = {
+  private: [
+    { cls: 'p-blue', pct: 'до −7%', tag: 'Для регулярних клієнтів', t: 'на регулярне базове прибирання', d: 'Кожне прибирання за графіком дешевше. Що частіше прибираємо — то більша знижка: {reg}', btn: 'Обрати графік', act: 'regular', img: CUT('v1781215063', 'Untitled_design_3_1cbfe642de.png'), alt: 'Клінерка Shine Guards з драбиною' },
+    { cls: 'p-orange', pct: '−10%', tag: 'Для нових клієнтів', t: 'Welcome-бонус на перше замовлення', d: 'Діє на генеральне та глибоке прибирання, прибирання при переїзді й миття вікон. Зі знижкою за регулярність не сумується.', btn: 'Забронювати', act: 'book', img: CUT('v1781195702', 'IMG_4003_dc078415cb.png'), alt: 'Клінерка Shine Guards протирає світильник' },
+    { cls: 'p-deep', pct: 'Сертифікат', tag: 'Ідея для подарунка', sm: 1, t: 'Чистота в подарунок близьким', d: 'На будь-яку суму, генеральне прибирання або регулярний графік.', btn: 'Замовити сертифікат', act: 'book', img: CUT('v1781199975', 'IMG_4019_4842fd7d0f.png'), alt: 'Клінерка Shine Guards з одягом на вішаку' },
+  ],
+  business: [
+    { cls: 'p-blue', pct: 'Індивідуально', tag: 'Для великих обʼєктів', sm: 1, t: 'Індивідуальні умови для великих обсягів', d: 'Для обʼєктів із великим місячним обсягом або мережі локацій розраховуємо індивідуальну ставку.', btn: 'Отримати розрахунок', act: 'book', img: CUT('v1781196201', 'IMG_4010_b768688f92.png'), alt: 'Клінерка Shine Guards чистить витяжку' },
+    { cls: 'p-orange', pct: 'до −10%', tag: 'Від 5 апартаментів', t: 'Спеціальні умови для керуючих апартаментами', d: 'Від 5 обʼєктів діє індивідуальна обʼємна ставка. Чим більше обʼєктів — тим вигідніша вартість прибирання.', btn: 'Розрахувати', act: 'apt', img: CUT('v1781199642', 'IMG_4014_710f19b374.png'), alt: 'Клінерка Shine Guards розкладає рушники' },
+    { cls: 'p-deep', pct: 'за 24 год', tag: 'Швидкий старт', sm: 1, t: 'Комерційна пропозиція протягом 24 годин', d: 'Опишіть обʼєкт або надішліть ТЗ — протягом доби отримаєте розрахунок, графік робіт і проєкт договору.', btn: 'Надіслати запит', act: 'book', img: CUT('v1781216321', 'window_e7a518f314.png'), alt: 'Клінерка Shine Guards миє вікно' },
+  ],
+};
+
+const FAQ = {
+  private: [
+    { cat: 'Ціни та оплата', qa: [
+      ['Скільки коштує прибирання?', 'Залежить від типу прибирання й площі. Фіксовану ціну ви бачите одразу в калькуляторі, менеджер лише підтверджує її — жодних сюрпризів після прибирання.'],
+      ['Коли й як оплачувати?', 'Після прибирання — карткою, за рахунком або готівкою. Виняток — прибирання при переїзді: його оплачують наперед.'],
+      ['Як отримати знижку?', 'Замовляйте базове прибирання регулярно: щотижня −7%, раз на 2 тижні −5%, раз на місяць −3% на кожне прибирання. А нові клієнти отримують −10% на перше генеральне чи глибоке прибирання, прибирання при переїзді або миття вікон. Знижки не сумуються.'],
+      ['Чи є мінімальне замовлення?', 'Для замовлень без прибирання квартири — окремих послуг, миття вікон чи хімчистки — 108 € у Відні, Граці та Мюнхені і 70 € у Братиславі. При додаванні послуг до прибирання мінімальна сума не застосовується.'],
+      ['Чому ціна миття вікон орієнтовна?', 'Час залежить від розміру вікон, рам і забруднення. Калькулятор рахує за нашою методикою, а точну суму менеджер підтвердить за фото ваших вікон.'],
+    ] },
+    { cat: 'Прибирання', qa: [
+      ['Чим відрізняються базове, генеральне та глибоке прибирання?', 'Базове — для підтримання чистоти: пил, підлога, кухня, ванна й туалет. Генеральне — для ретельного прибирання: усе з базового, а ще вікна зсередини, духовка й холодильник усередині. Глибоке — для максимальної деталізації: внутрішні поверхні шаф і техніки, вікна з обох боків, складний жир і вапняний наліт.'],
+      ['Ви привозите свої засоби для прибирання?', 'Так, клінери привозять усі потрібні засоби й інвентар. Хочете, щоб ми користувалися вашими, — теж можна.'],
+      ['Скільки часу займає прибирання?', 'Залежить від площі й типу прибирання. Калькулятор одразу покаже орієнтовний час і скільки клінерів приїде.'],
+      ['Чи потрібно мені перебувати вдома під час прибирання?', 'Не обовʼязково. Багато клієнтів залишають ключі й повертаються вже в чисту квартиру. Хочете бути вдома — теж без проблем.'],
+      ['Що робити, якщо під час прибирання щось пошкодиться?', 'Наші клінери офіційно працевлаштовані, а відповідальність застрахована. Напишіть менеджеру одразу після прибирання — розберемося, а збитки покриваються відповідно до умов страхування.'],
+      ['Що, якщо результат мене не влаштує?', 'Напишіть нам одразу після прибирання. Якщо ми щось недоробили з того, що входить у ваше прибирання, — повернемося й виправимо безкоштовно.'],
+    ] },
+    { cat: 'Бронювання', qa: [
+      ['Як я можу замовити прибирання?', 'Розрахуйте ціну в калькуляторі й залиште заявку — або просто напишіть нам у WhatsApp. Менеджер підбере зручний день і час.'],
+      ['Чи можна скасувати або перенести прибирання?', 'Так, просто напишіть менеджеру. Скасувати прибирання можна безкоштовно не пізніше ніж за 12 годин до початку, перенести на інший час — не пізніше ніж за 2 години.'],
+      ['Коли ви працюєте й відповідаєте?', 'Прибираємо 24/7 — у будь-який день і час, який вам зручний. Менеджери на звʼязку щодня з 9:00 до 18:00 і відповідають протягом 30 хвилин; найшвидше — у WhatsApp.'],
+      ['Чи можна замовити регулярне прибирання?', 'Так — базове. Увімкніть у калькуляторі «Зробити регулярним» і оберіть графік: щотижня, раз на 2 тижні або раз на місяць. Одне з прибирань місяця можна зробити генеральним або глибоким.'],
+      ['З якими типами нерухомості ви працюєте?', 'Прибираємо квартири й будинки, а також офіси, ресторани, салони краси, студії, спортзали, готелі та апартаменти Airbnb.'],
+      ['У яких містах ви працюєте?', 'У Відні, Граці, Мюнхені та Братиславі.'],
+    ] },
+  ],
+  business: [
+    { cat: 'Договір і оплата', qa: [
+      ['Чи працюєте ви за договором?', 'Так — за офіційним договором, з персональним менеджером і всіма документами для бухгалтерії.'],
+      ['Ціни вказані з ПДВ чи без?', 'Для бізнесу в Австрії та Німеччині ціни в калькуляторі — без ПДВ. У Словаччині ми не є платниками ПДВ. Можлива оплата з ПДВ та без, а також відстрочка платежу.'],
+      ['Чи є знижки за обсяг?', 'Для великих обсягів і мереж локацій розраховуємо індивідуальну ставку. Для керуючих апартаментами діє обʼємна ставка — до −10% залежно від кількості обʼєктів.'],
+      ['Як швидко ви надішлете пропозицію?', 'Протягом 24 годин. Опишіть обʼєкт або надішліть ТЗ — отримаєте пропозицію без прихованих доплат.'],
+    ] },
+    { cat: 'Організація', qa: [
+      ['Чи можна прибирати поза робочим часом?', 'Так — рано вранці, ввечері, вночі або у вихідні: прибираємо 24/7. Особливі умови враховуємо в розрахунку.'],
+      ['Чиї засоби та інвентар?', 'Наші — професійні засоби й інвентар уже в ставці.'],
+      ['Чи можете приїхати на огляд обʼєкта?', 'Так. Менеджер приїде у зручний час, оцінить обсяг робіт на місці й погодить з вами графік.'],
+      ['Чи берете участь у тендерах?', 'Так. Надішліть технічне завдання — підготуємо документи й розрахунок за вашими вимогами.'],
+    ] },
+    { cat: 'Персонал і якість', qa: [
+      ['Хто прибирає?', 'Офіційно працевлаштовані клінери, відповідальність застрахована. Вони працюють за чек-листами, а якість перевіряє персональний менеджер.'],
+      ['З якими обʼєктами ви працюєте?', 'Офіси й коворкінги, бізнес-центри, готелі та апартаменти, ресторани й професійні кухні, магазини й шоуруми, салони краси, фітнес-центри, медичні центри, торгові центри, автосалони.'],
+      ['Коли ви працюєте й відповідаєте?', 'Прибираємо 24/7. Менеджери на звʼязку щодня з 9:00 до 18:00 і відповідають протягом 30 хвилин.'],
+    ] },
+  ],
+};
+
+const PARTNER = {
+  who: [
+    ['boxkey', 'Агенти з нерухомості та керуючі майном', 'Перед показом, зміною орендарів чи передачею ключів квартиру треба прибрати. Ми робимо це швидко, а ви отримуєте винагороду за кожного клієнта.'],
+    ['towers', 'Офісні будівлі та коворкінги', 'Рекомендуйте наш сервіс компаніям-орендарям: вони отримують надійне прибирання, а керівництво будівлі — партнерську винагороду.'],
+    ['roller', 'Дизайнери інтерʼєру та фахівці з ремонту', 'Вашим клієнтам потрібне прибирання після ремонту чи перед заїздом. Рекомендуйте нас і отримуйте винагороду за кожну послугу.'],
+    ['people', 'Блогери й спільноти', 'Ведете спільноту чи сторінку в соцмережах? Реферальне посилання, промокод або спільна колаборація — оберемо формат разом.'],
+  ],
+  formats: [
+    'Рієлтор або представник компанії з управління майном',
+    'Управляючий майном, готелями чи апартаментами (включно з мережами Airbnb)',
+    'Офіс-менеджер, керівник коворкінгу чи адміністратор бізнес-центру',
+    'Власник або адміністратор ресторану, кафе, салону краси',
+    'Представник мувінгової компанії або служби перевезення',
+  ],
+};
+
+/* ═════════ ABOUT ═════════ */
+const ABOUT_FACTS = [
+  ['<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>', 'Офіційно працевлаштована команда'],
+  ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>', 'Страхування відповідальності'],
+  ['<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>', 'Послуги для дому та бізнесу'],
+];
+// "2024" and the stage wording come from the review text — confirm with the owner
+const STORY = [
+  ['2024', 'Старт у Відні', 'Заснували Shine Guards і почали формувати власні стандарти сервісу.'],
+  ['', 'Перші постійні клієнти', 'Квартири й будинки, а згодом — перші комерційні обʼєкти.'],
+  ['', 'Команда й контроль якості', 'Супервайзери, чек-листи, менеджери та системна перевірка результату.'],
+  ['Сьогодні', 'Дім і бізнес у 4 містах', 'Відень, Грац, Мюнхен і Братислава: домашній і комерційний клінінг, постійні клієнти й подальший розвиток.'],
+];
+const MISSION = [
+  ['Місія', 'Зробити професійне прибирання передбачуваним сервісом: зрозуміла ціна, надійна команда, стабільна якість і швидка комунікація.'],
+  ['Наша мета', 'Будувати сервіс із єдиними стандартами якості в кожному місті, де працює Shine Guards, — для приватних клієнтів і бізнесу.'],
+];
+const FOUNDER = { name: 'Bohdan Hryshan', role: 'Засновник і CEO', initials: 'BH',
+  quote: 'Shine Guards створений із простої ідеї: клінінг має бути не випадковою послугою, а передбачуваним професійним сервісом. Ми будуємо компанію навколо системи, відповідальності та довгострокових відносин із клієнтами.' };
+const PRINCIPLES = [
+  ['search', 'Контроль якості', 'Чек-листи, стандарти та перевірка виконаних робіт.'],
+  ['people', 'Надійна команда', 'Офіційно працевлаштовані та підготовлені клінери.'],
+  ['shield', 'Відповідальність', 'Страхування та зрозумілий процес вирішення проблем.'],
+  ['headset', 'Персональний супровід', 'Менеджер залишається на звʼязку від замовлення до завершення робіт.'],
+];
